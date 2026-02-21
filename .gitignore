@@ -205,3 +205,24 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# --- Custom App Ignores ---
+# Specs and documentation
+database_architecture_spec.md
+IMPLEMENTATION_DETAILS.md
+gymlogs_initial_app_spec.md
+
+# Seeding and test scripts
+workout_*.txt
+test_db*.py
+backend/seed_workouts.py
+
+# Ignore nested .gitignore files
+**/.gitignore
+!/.gitignore
+
+# Node modules and frontend builds
+node_modules/
+frontend/dist/
+frontend/build/
+backend/package*.json

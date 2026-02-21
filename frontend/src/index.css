@@ -1,0 +1,20 @@
+﻿@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-gray-950 text-gray-100 font-sans antialiased;
+  }
+
+  /* Remove spinner in Chrome, Edge, Safari */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Remove spinner in Firefox */
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
