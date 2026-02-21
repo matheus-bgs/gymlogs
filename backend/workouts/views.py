@@ -76,21 +76,26 @@ class TopsetsView(views.APIView):
         for s in sets:
             data.append({
                 'date': s.workout_exercise.workout_session.date,
-                'volume': s.volume()
+                'volume': s.volume(),
+                'weight': s.weight,
+                'has_intensity': s.intensity_method_id is not None
             })
 
         df = pd.DataFrame(data)
 
-        # Group by date, compute max volume, sort by date
-        topsets = df.groupby('date')['volume'].max().reset_index()
-        topsets = topsets.sort_values('date')
+        # Group by date, compute max volume, max weight, and any intensity
+        grouped = df.groupby('date').agg(
+            topset=('volume', 'max'),
+            max_weight=('weight', 'max'),
+            has_intensity=('has_intensity', 'any')
+        ).reset_index()
 
-        # Rename volume to topset
-        topsets = topsets.rename(columns={'volume': 'topset'})
+        grouped = grouped.sort_values('date')
 
-        # Convert date to string
-        topsets['date'] = topsets['date'].astype(str)
+        # Convert date to string and has_intensity to bool
+        grouped['date'] = grouped['date'].astype(str)
+        grouped['has_intensity'] = grouped['has_intensity'].astype(bool)
 
-        result = topsets.to_dict('records')
+        result = grouped.to_dict('records')
 
         return Response({"data": result})
