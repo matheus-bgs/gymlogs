@@ -2,6 +2,7 @@
     "nav": {
         "logWorkout": "Registrar Treino",
         "progress": "Progresso",
+        "plan": "Meu Plano",
         "logout": "Sair"
     },
     "login": {
@@ -62,7 +63,35 @@
         "needOneSet": "Por favor, adicione pelo menos uma série.",
         "needExercise": "Por favor, selecione um exercício.",
         "createExerciseFailed": "Falha ao criar exercício. Ele pode já existir.",
-        "saveWorkoutFailed": "Falha ao enviar treino"
+        "saveWorkoutFailed": "Falha ao enviar treino",
+        "selectDay": "Selecione o dia de treino",
+        "logWithoutPlan": "Registrar sem plano",
+        "resumingSession": "Continuando sessão — retomando de onde você parou.",
+        "exerciseLogged": "{{name}} registrado!",
+        "sessionComplete": "Sessão Concluída!",
+        "sessionSummaryTitle": "Resumo do Treino",
+        "viewProgress": "Ver Progresso",
+        "logAnotherDay": "Registrar Outro Dia"
+    },
+    "plan": {
+        "title": "Meu Plano de Treino",
+        "subtitle": "Defina seus exercícios, séries e faixas de repetições para cada dia de treino.",
+        "noPlan": "Você ainda não tem um plano de treino.",
+        "createPlan": "Criar Plano",
+        "planNamePlaceholder": "Ex: 4 dias Push Pull Perna",
+        "addDay": "Adicionar Dia",
+        "dayLabelPlaceholder": "Rótulo do dia (ex: A)",
+        "addExercise": "Adicionar Exercício",
+        "targetSets": "Séries",
+        "repsMin": "Reps mín",
+        "repsMax": "Reps máx",
+        "target": "Meta: {{sets}} séries de {{min}}–{{max}} reps",
+        "deleteDayConfirm": "Excluir o dia \"{{label}}\" e todos os seus exercícios?",
+        "deleteExerciseConfirm": "Remover este exercício do plano?",
+        "createPlanFailed": "Falha ao criar plano.",
+        "noExercisesInDay": "Nenhum exercício adicionado a este dia ainda.",
+        "saving": "Salvando...",
+        "saved": "Salvo"
     },
     "graph": {
         "title": "Visão Geral do Progresso",

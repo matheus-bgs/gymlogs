@@ -1,11 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { Dumbbell, LineChart, LogOut } from 'lucide-react';
+import { Dumbbell, LineChart, LogOut, ClipboardList } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Workout from './pages/Workout';
 import Graph from './pages/Graph';
+import Plan from './pages/Plan';
 
 function PrivateRoute({ children }) {
     const token = localStorage.getItem('access_token');
@@ -41,6 +42,9 @@ function Layout({ children }) {
                             <div className="hidden md:flex gap-2">
                                 <Link to="/workout" className="text-gray-300 hover:text-white hover:bg-gray-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                                     <Dumbbell className="h-4 w-4" /> {t('nav.logWorkout')}
+                                </Link>
+                                <Link to="/plan" className="text-gray-300 hover:text-white hover:bg-gray-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                                    <ClipboardList className="h-4 w-4" /> {t('nav.plan')}
                                 </Link>
                                 <Link to="/graph" className="text-gray-300 hover:text-white hover:bg-gray-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                                     <LineChart className="h-4 w-4" /> {t('nav.progress')}
@@ -86,6 +90,13 @@ function App() {
                     <PrivateRoute>
                         <Layout>
                             <Graph />
+                        </Layout>
+                    </PrivateRoute>
+                } />
+                <Route path="/plan" element={
+                    <PrivateRoute>
+                        <Layout>
+                            <Plan />
                         </Layout>
                     </PrivateRoute>
                 } />

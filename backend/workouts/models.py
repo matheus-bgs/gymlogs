@@ -3,6 +3,49 @@ from django.contrib.auth.models import User
 from .exercise_translations import EXERCISE_TRANSLATIONS_PT
 
 
+class WorkoutPlan(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='plans', db_index=True)
+    name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+
+class PlanDay(models.Model):
+    plan = models.ForeignKey(
+        WorkoutPlan, on_delete=models.CASCADE, related_name='days', db_index=True)
+    label = models.CharField(max_length=10)  # e.g. "A", "B", "C"
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('plan', 'label')
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.plan.name} - Day {self.label}"
+
+
+class PlanExercise(models.Model):
+    plan_day = models.ForeignKey(
+        PlanDay, on_delete=models.CASCADE, related_name='exercises', db_index=True)
+    exercise = models.ForeignKey(
+        'Exercise', on_delete=models.RESTRICT, db_index=True)
+    order = models.PositiveIntegerField(default=0)
+    target_sets = models.PositiveIntegerField(default=3)
+    reps_min = models.PositiveIntegerField(default=6)
+    reps_max = models.PositiveIntegerField(default=12)
+
+    class Meta:
+        unique_together = ('plan_day', 'order')
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.plan_day} - {self.exercise.name}"
+
+
 class Exercise(models.Model):
     name = models.CharField(max_length=255, unique=True, db_index=True)
     name_pt = models.CharField(max_length=255, blank=True, null=True)
@@ -25,6 +68,8 @@ class WorkoutSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
     date = models.DateField(db_index=True)
     notes = models.TextField(blank=True, null=True)
+    plan_day = models.ForeignKey(
+        PlanDay, on_delete=models.SET_NULL, null=True, blank=True, related_name='sessions')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -41,6 +86,8 @@ class WorkoutExercise(models.Model):
         WorkoutSession, related_name='exercises', on_delete=models.CASCADE, db_index=True)
     exercise = models.ForeignKey(
         Exercise, on_delete=models.RESTRICT, db_index=True)
+    plan_exercise = models.ForeignKey(
+        PlanExercise, on_delete=models.SET_NULL, null=True, blank=True, related_name='logged_exercises')
     order = models.PositiveIntegerField()
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

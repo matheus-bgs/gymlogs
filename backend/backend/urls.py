@@ -18,7 +18,13 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from workouts.views import ExerciseListView, WorkoutCreateView, TopsetsView, LastWorkoutView, DebugDBView, RegisterView
+from workouts.views import (
+    ExerciseListView, WorkoutCreateView, TopsetsView, LastWorkoutView,
+    DebugDBView, RegisterView, SessionProgressView,
+    WorkoutPlanView, PlanDetailView,
+    PlanDayView, PlanDayDetailView,
+    PlanExerciseView, PlanExerciseDetailView, PlanExerciseReorderView,
+)
 
 urlpatterns = [
     path('api/debug-db/', DebugDBView.as_view()),
@@ -29,6 +35,19 @@ urlpatterns = [
     path("api/exercises/", ExerciseListView.as_view()),
     path("api/workouts/", WorkoutCreateView.as_view()),
     path("api/workouts/last/", LastWorkoutView.as_view()),
+    path("api/workouts/session-progress/", SessionProgressView.as_view()),
     path("api/topsets/", TopsetsView.as_view()),
+    # Plan endpoints
+    path("api/plans/", WorkoutPlanView.as_view()),
+    path("api/plans/<int:plan_id>/", PlanDetailView.as_view()),
+    path("api/plans/<int:plan_id>/days/", PlanDayView.as_view()),
+    path("api/plans/<int:plan_id>/days/<int:day_id>/",
+         PlanDayDetailView.as_view()),
+    path("api/plans/<int:plan_id>/days/<int:day_id>/exercises/",
+         PlanExerciseView.as_view()),
+    path("api/plans/<int:plan_id>/days/<int:day_id>/exercises/reorder/",
+         PlanExerciseReorderView.as_view()),
+    path("api/plans/<int:plan_id>/days/<int:day_id>/exercises/<int:ex_id>/",
+         PlanExerciseDetailView.as_view()),
     re_path(r'^.*', TemplateView.as_view(template_name='index.html')),
 ]

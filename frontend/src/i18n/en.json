@@ -2,6 +2,7 @@
     "nav": {
         "logWorkout": "Log Workout",
         "progress": "Progress",
+        "plan": "My Plan",
         "logout": "Logout"
     },
     "login": {
@@ -62,7 +63,35 @@
         "needOneSet": "Please add at least one set.",
         "needExercise": "Please select an exercise.",
         "createExerciseFailed": "Failed to create exercise. It might already exist.",
-        "saveWorkoutFailed": "Failed to submit workout"
+        "saveWorkoutFailed": "Failed to submit workout",
+        "selectDay": "Select workout day",
+        "logWithoutPlan": "Log without plan",
+        "resumingSession": "Resuming session — picking up from where you left off.",
+        "exerciseLogged": "{{name}} logged!",
+        "sessionComplete": "Session Complete!",
+        "sessionSummaryTitle": "Workout Summary",
+        "viewProgress": "View Progress",
+        "logAnotherDay": "Log Another Day"
+    },
+    "plan": {
+        "title": "My Workout Plan",
+        "subtitle": "Define your exercises, sets and rep ranges for each training day.",
+        "noPlan": "You don't have a workout plan yet.",
+        "createPlan": "Create Plan",
+        "planNamePlaceholder": "e.g. 4-day Push Pull Legs",
+        "addDay": "Add Day",
+        "dayLabelPlaceholder": "Day label (e.g. A)",
+        "addExercise": "Add Exercise",
+        "targetSets": "Sets",
+        "repsMin": "Min reps",
+        "repsMax": "Max reps",
+        "target": "Target: {{sets}} sets of {{min}}–{{max}} reps",
+        "deleteDayConfirm": "Delete day \"{{label}}\" and all its exercises?",
+        "deleteExerciseConfirm": "Remove this exercise from the plan?",
+        "createPlanFailed": "Failed to create plan.",
+        "noExercisesInDay": "No exercises added to this day yet.",
+        "saving": "Saving...",
+        "saved": "Saved"
     },
     "graph": {
         "title": "Progress Overview",

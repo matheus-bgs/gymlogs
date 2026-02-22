@@ -1,10 +1,61 @@
 from rest_framework import serializers
-from .models import Exercise, WorkoutSession, WorkoutExercise, SetEntry, IntensityMethod
+from .models import (
+    Exercise, WorkoutSession, WorkoutExercise, SetEntry, IntensityMethod,
+    WorkoutPlan, PlanDay, PlanExercise,
+)
+
 
 class ExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exercise
         fields = '__all__'
+
+
+# ---------------------------------------------------------------------------
+# Plan serializers
+# ---------------------------------------------------------------------------
+
+class PlanExerciseSerializer(serializers.ModelSerializer):
+    exercise = ExerciseSerializer(read_only=True)
+    exercise_id = serializers.PrimaryKeyRelatedField(
+        queryset=Exercise.objects.all(), source='exercise', write_only=True
+    )
+
+    class Meta:
+        model = PlanExercise
+        fields = ['id', 'exercise', 'exercise_id',
+                  'order', 'target_sets', 'reps_min', 'reps_max']
+
+
+class PlanDaySerializer(serializers.ModelSerializer):
+    exercises = PlanExerciseSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = PlanDay
+        fields = ['id', 'label', 'order', 'exercises']
+
+
+class WorkoutPlanSerializer(serializers.ModelSerializer):
+    days = PlanDaySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = WorkoutPlan
+        fields = ['id', 'name', 'is_active', 'days', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        # Deactivate any existing active plan for this user
+        WorkoutPlan.objects.filter(
+            user=user, is_active=True).update(is_active=False)
+        plan = WorkoutPlan.objects.create(
+            user=user, is_active=True, **validated_data)
+        return plan
+
+
+# ---------------------------------------------------------------------------
+# Workout logging serializers
+# ---------------------------------------------------------------------------
 
 class SetEntryPayloadSerializer(serializers.Serializer):
     order = serializers.IntegerField()
@@ -13,11 +64,19 @@ class SetEntryPayloadSerializer(serializers.Serializer):
     reached_failure = serializers.BooleanField(default=False)
     intensity_method = serializers.CharField(max_length=50, default='none')
 
+
 class WorkoutSerializer(serializers.Serializer):
     date = serializers.DateField()
-    exercise = serializers.PrimaryKeyRelatedField(queryset=Exercise.objects.all())
+    exercise = serializers.PrimaryKeyRelatedField(
+        queryset=Exercise.objects.all())
     notes = serializers.CharField(allow_blank=True, required=False)
     sets = SetEntryPayloadSerializer(many=True)
+    plan_day = serializers.PrimaryKeyRelatedField(
+        queryset=PlanDay.objects.all(), required=False, allow_null=True
+    )
+    plan_exercise = serializers.PrimaryKeyRelatedField(
+        queryset=PlanExercise.objects.all(), required=False, allow_null=True
+    )
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -25,12 +84,14 @@ class WorkoutSerializer(serializers.Serializer):
         exercise = validated_data['exercise']
         notes = validated_data.get('notes', '')
         sets_data = validated_data['sets']
+        plan_day = validated_data.get('plan_day', None)
+        plan_exercise = validated_data.get('plan_exercise', None)
 
         # 1. Get or create WorkoutSession for the user and date
         session, _ = WorkoutSession.objects.get_or_create(
             user=user,
             date=date,
-            defaults={'notes': notes}
+            defaults={'notes': notes, 'plan_day': plan_day}
         )
 
         # 2. Create WorkoutExercise
@@ -38,15 +99,17 @@ class WorkoutSerializer(serializers.Serializer):
         workout_exercise = WorkoutExercise.objects.create(
             workout_session=session,
             exercise=exercise,
+            plan_exercise=plan_exercise,
             order=current_exercises + 1,
-            notes=notes
+            notes=notes,
         )
 
         # 3. Create SetEntries
         for set_data in sets_data:
             intensity_name = set_data.pop('intensity_method', 'none')
-            intensity, _ = IntensityMethod.objects.get_or_create(name=intensity_name)
-            
+            intensity, _ = IntensityMethod.objects.get_or_create(
+                name=intensity_name)
+
             SetEntry.objects.create(
                 workout_exercise=workout_exercise,
                 intensity_method=intensity,
