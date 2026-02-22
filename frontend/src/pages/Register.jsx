@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dumbbell, LogIn, UserPlus } from 'lucide-react';
+import { Dumbbell, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 
-function Login() {
+function Register() {
     const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
@@ -13,15 +15,23 @@ function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
+            return;
+        }
+
         setIsLoading(true);
         try {
-            const response = await api.post('token/', { username, password });
-            localStorage.setItem('access_token', response.data.access);
-            localStorage.setItem('refresh_token', response.data.refresh);
+            await api.post('register/', { username, email, password });
+            // Auto-login after successful registration
+            const tokenRes = await api.post('token/', { username, password });
+            localStorage.setItem('access_token', tokenRes.data.access);
+            localStorage.setItem('refresh_token', tokenRes.data.refresh);
             navigate('/workout');
         } catch (err) {
-            console.error('Login failed', err);
-            setError('Invalid username or password');
+            const detail = err.response?.data?.error || 'Registration failed. Please try again.';
+            setError(detail);
         } finally {
             setIsLoading(false);
         }
@@ -35,10 +45,10 @@ function Login() {
                         <Dumbbell className="h-8 w-8 text-blue-500" />
                     </div>
                     <h2 className="text-center text-3xl font-extrabold text-white tracking-tight">
-                        Welcome back
+                        Create an account
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-400">
-                        Sign in to log your next workout
+                        Start tracking your workouts today
                     </p>
                 </div>
 
@@ -55,9 +65,19 @@ function Login() {
                                 type="text"
                                 required
                                 className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
-                                placeholder="Enter your username"
+                                placeholder="Choose a username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Email <span className="text-gray-500">(optional)</span></label>
+                            <input
+                                type="email"
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                                placeholder="you@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                             />
                         </div>
                         <div>
@@ -71,6 +91,17 @@ function Login() {
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Confirm Password</label>
+                            <input
+                                type="password"
+                                required
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                                placeholder="••••••••"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                            />
+                        </div>
                     </div>
 
                     <button
@@ -78,21 +109,21 @@ function Login() {
                         disabled={isLoading}
                         className="group relative w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
                     >
-                        {isLoading ? 'Signing in...' : (
+                        {isLoading ? 'Creating account...' : (
                             <>
-                                Sign in <LogIn className="w-4 h-4" />
+                                Create account <UserPlus className="w-4 h-4" />
                             </>
                         )}
                     </button>
 
                     <p className="text-center text-sm text-gray-400">
-                        Don't have an account?{' '}
+                        Already have an account?{' '}
                         <button
                             type="button"
-                            onClick={() => navigate('/register')}
-                            className="text-blue-400 hover:text-blue-300 font-medium transition-colors inline-flex items-center gap-1"
+                            onClick={() => navigate('/login')}
+                            className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
                         >
-                            Register <UserPlus className="w-3.5 h-3.5" />
+                            Sign in
                         </button>
                     </p>
                 </form>
@@ -101,4 +132,4 @@ function Login() {
     );
 }
 
-export default Login;
+export default Register;

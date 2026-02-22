@@ -18,10 +18,11 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from workouts.views import ExerciseListView, WorkoutCreateView, TopsetsView, LastWorkoutView, DebugDBView
+from workouts.views import ExerciseListView, WorkoutCreateView, TopsetsView, LastWorkoutView, DebugDBView, RegisterView
 
 urlpatterns = [
     path('api/debug-db/', DebugDBView.as_view()),
+    path('api/register/', RegisterView.as_view()),
     path('admin/', admin.site.urls),
     path("api/token/", TokenObtainPairView.as_view()),
     path("api/token/refresh/", TokenRefreshView.as_view()),

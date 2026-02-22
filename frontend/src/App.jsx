@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { Dumbbell, LineChart, LogOut } from 'lucide-react';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Workout from './pages/Workout';
 import Graph from './pages/Graph';
 
@@ -12,7 +13,7 @@ function PrivateRoute({ children }) {
 
 function Layout({ children }) {
     const navigate = useNavigate();
-    
+
     const handleLogout = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
@@ -56,6 +57,7 @@ function App() {
         <Router>
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 <Route path="/workout" element={
                     <PrivateRoute>
                         <Layout>

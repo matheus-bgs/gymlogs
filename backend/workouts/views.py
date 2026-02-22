@@ -8,6 +8,25 @@ from .serializers import ExerciseSerializer, WorkoutSerializer
 import pandas as pd
 
 
+class RegisterView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username', '').strip()
+        password = request.data.get('password', '')
+        email = request.data.get('email', '').strip()
+
+        if not username or not password:
+            return Response({'error': 'Username and password are required.'}, status=400)
+
+        if User.objects.filter(username=username).exists():
+            return Response({'error': 'Username is already taken.'}, status=400)
+
+        user = User.objects.create_user(
+            username=username, password=password, email=email)
+        return Response({'message': f'User "{user.username}" created successfully.'}, status=201)
+
+
 class DebugDBView(views.APIView):
     permission_classes = [AllowAny]
 
