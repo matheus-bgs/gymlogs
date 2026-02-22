@@ -5,7 +5,7 @@
 EXERCISE_TRANSLATIONS_PT = {
     # Chest / Push
     'Bench Press': 'Supino Reto',
-    'Incline DB Press': 'Supino Inclinado com Halteres',
+    'Incline Dumbbell Press': 'Supino Inclinado com Halteres',
     'Cable Fly': 'Crucifixo no Cabo',
     # Back / Pull
     'Barbell Row': 'Remada com Barra',
@@ -23,7 +23,8 @@ EXERCISE_TRANSLATIONS_PT = {
     'Dumbbell Curl': 'Rosca Direta',
     # Shoulders / Rear Delt
     'Cable Lateral Raise': 'Elevação Lateral no Cabo',
-    'Overhead Press': 'Desenvolvimento com Halteres',
+    'Overhead Press': 'Desenvolvimento com Barra',
+    'Overhead Dumbbell Press': 'Desenvolvimento com Halteres',
     'Reverse Fly': 'Crucifixo Inverso',
     'Reverse Cable Fly': 'Crucifixo Inverso no Cabo',
     'Reverse Pec Deck': 'Crucifixo Inverso (Máquina)',

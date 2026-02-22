@@ -228,3 +228,7 @@ frontend/build/
 backend/package*.json
 staticfiles/
 backend/staticfiles/
+
+# Un-ignore frontend source lib (overrides the Python template's lib/ rule above)
+!frontend/src/lib/
+!frontend/src/lib/**
