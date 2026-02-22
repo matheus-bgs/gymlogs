@@ -136,7 +136,7 @@ function LastWorkoutPanel({ exerciseId, t }) {
                             <div key={idx} className="bg-gray-900 rounded-xl p-3 border border-gray-800 flex items-center justify-between">
                                 <span className="text-xs font-bold text-gray-500 bg-gray-800 w-6 h-6 rounded-full flex items-center justify-center">{s.order}</span>
                                 <div className="flex flex-col items-end">
-                                    <span className="text-sm font-bold text-white">{s.weight} <span className="text-xs text-gray-400 font-normal">kg</span> Ã— {s.reps}</span>
+                                    <span className="text-sm font-bold text-white">{s.weight} <span className="text-xs text-gray-400 font-normal">kg</span> &times; {s.reps}</span>
                                     <div className="flex gap-1 mt-1">
                                         {s.intensity_method !== 'none' && (
                                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">{s.intensity_method}</span>
