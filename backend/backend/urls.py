@@ -15,7 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.views.generic import TemplateView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from workouts.views import ExerciseListView, WorkoutCreateView, TopsetsView, LastWorkoutView
 
@@ -27,4 +28,5 @@ urlpatterns = [
     path("api/workouts/", WorkoutCreateView.as_view()),
     path("api/workouts/last/", LastWorkoutView.as_view()),
     path("api/topsets/", TopsetsView.as_view()),
+    re_path(r'^.*', TemplateView.as_view(template_name='index.html')),
 ]
