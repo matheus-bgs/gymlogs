@@ -1,56 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import Plot from 'react-plotly.js';
 import { TrendingUp, Filter } from 'lucide-react';
-import api from '../api/axios';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys, fetchExercises, fetchTopsets } from '../lib/queries';
 
 function Graph() {
-    const [exercises, setExercises] = useState([]);
     const [selectedExercise, setSelectedExercise] = useState('');
-    const [plotType, setPlotType] = useState('topset'); // 'topset' or 'max_weight'
-    const [plotData, setPlotData] = useState({ x: [], topset: [], max_weight: [], has_intensity: [] });
-    const [isLoading, setIsLoading] = useState(true);
+    const [plotType, setPlotType] = useState('topset'); // 'topset', 'max_weight', or 'total_volume'
 
+    // ── Queries ────────────────────────────────────────────────────────────────
+
+    const { data: exercises = [] } = useQuery({
+        queryKey: queryKeys.exercises(),
+        queryFn: fetchExercises,
+        staleTime: 10 * 60 * 1000,
+    });
+
+    // Auto-select first exercise once list is loaded
     useEffect(() => {
-        const fetchExercises = async () => {
-            try {
-                const response = await api.get('exercises/');
-                // Sort exercises alphabetically
-                const sortedExercises = response.data.sort((a, b) => a.name.localeCompare(b.name));
-                setExercises(sortedExercises);
-                if (sortedExercises.length > 0 && !selectedExercise) {
-                    setSelectedExercise(sortedExercises[0].id.toString());
-                }
-            } catch (error) {
-                console.error('Failed to fetch exercises', error);
-            }
-        };
-        fetchExercises();
-    }, []);
+        if (exercises.length > 0 && !selectedExercise) {
+            setSelectedExercise(exercises[0].id.toString());
+        }
+    }, [exercises, selectedExercise]);
 
-    useEffect(() => {
-        const fetchTopsets = async () => {
-            if (!selectedExercise) return;
-
-            setIsLoading(true);
-            try {
-                const url = `topsets/?exercise_id=${selectedExercise}`;
-                const response = await api.get(url);
-                const data = response.data.data;
-
-                setPlotData({
-                    x: data.map(d => d.date),
-                    topset: data.map(d => d.topset),
-                    max_weight: data.map(d => d.max_weight),
-                    has_intensity: data.map(d => d.has_intensity)
-                });
-            } catch (error) {
-                console.error('Failed to fetch topsets', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchTopsets();
-    }, [selectedExercise]);
+    const { data: plotData = { x: [], topset: [], max_weight: [], total_volume: [], has_intensity: [] }, isLoading } = useQuery({
+        queryKey: queryKeys.topsets(selectedExercise),
+        queryFn: () => fetchTopsets(selectedExercise),
+        enabled: !!selectedExercise,
+        staleTime: 60 * 1000, // 1 minute — invalidated after a new workout is saved
+    });
 
     return (
         <div className="max-w-5xl mx-auto font-sans">
@@ -80,6 +58,12 @@ function Graph() {
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${plotType === 'max_weight' ? 'bg-green-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'}`}
                                 >
                                     Max Weight
+                                </button>
+                                <button
+                                    onClick={() => setPlotType('total_volume')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${plotType === 'total_volume' ? 'bg-green-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'}`}
+                                >
+                                    Total Volume
                                 </button>
                             </div>
 
@@ -115,7 +99,7 @@ function Graph() {
                                 data={[
                                     {
                                         x: plotData.x,
-                                        y: plotType === 'topset' ? plotData.topset : plotData.max_weight,
+                                        y: plotType === 'topset' ? plotData.topset : plotType === 'max_weight' ? plotData.max_weight : plotData.total_volume,
                                         type: 'scatter',
                                         mode: 'lines+markers',
                                         marker: {
@@ -133,7 +117,7 @@ function Graph() {
                                             smoothing: 1.3
                                         },
                                         fill: 'tozeroy',
-                                        fillcolor: 'rgba(59, 130, 246, 0.1)',
+                                        fillcolor: 'rgba(108, 179, 62, 0.1)',
                                     },
                                 ]}
                                 layout={{
@@ -154,7 +138,7 @@ function Graph() {
                                         zerolinecolor: '#1f2937',
                                         tickfont: { color: '#6b7280' },
                                         title: {
-                                            text: plotType === 'topset' ? 'Volume (Weight × Reps)' : 'Max Weight (kg)',
+                                            text: plotType === 'topset' ? 'Topset Volume (Weight × Reps)' : plotType === 'max_weight' ? 'Max Weight (kg)' : 'Total Volume (kg)',
                                             font: { color: '#9ca3af', size: 12 }
                                         },
                                         showgrid: true,

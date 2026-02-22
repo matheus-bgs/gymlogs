@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, UserPlus } from 'lucide-react';
 import api from '../api/axios';
+import queryClient from '../lib/queryClient';
+import { queryKeys, fetchExercises } from '../lib/queries';
 
 function Login() {
     const [username, setUsername] = useState('');
@@ -18,6 +20,11 @@ function Login() {
             const response = await api.post('token/', { username, password });
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
+            // Warm the cache before navigating so the Workout page loads instantly
+            await queryClient.prefetchQuery({
+                queryKey: queryKeys.exercises(),
+                queryFn: fetchExercises,
+            });
             navigate('/workout');
         } catch (err) {
             console.error('Login failed', err);

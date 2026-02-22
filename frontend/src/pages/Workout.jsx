@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Save, Calendar, Activity, FileText, X, Search, ChevronDown } from 'lucide-react';
-import api from '../api/axios';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, fetchExercises, fetchLastWorkout, saveWorkout, createExercise } from '../lib/queries';
 
 function Workout() {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -10,10 +11,6 @@ function Workout() {
     const [newExerciseName, setNewExerciseName] = useState('');
     const [notes, setNotes] = useState('');
     const [sets, setSets] = useState([{ order: 1, weight: '', reps: '', reached_failure: false, intensity_method: 'none' }]);
-    const [exercises, setExercises] = useState([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [lastWorkout, setLastWorkout] = useState(null);
-    const [isLoadingLastWorkout, setIsLoadingLastWorkout] = useState(false);
 
     // Searchable select state
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -21,44 +18,52 @@ function Workout() {
     const dropdownRef = useRef(null);
 
     const navigate = useNavigate();
+    const queryClientInstance = useQueryClient();
 
-    const fetchExercises = async () => {
-        try {
-            const response = await api.get('exercises/');
-            setExercises(response.data);
-        } catch (error) {
-            console.error('Failed to fetch exercises', error);
-        }
-    };
+    // ── Queries ──────────────────────────────────────────────────────────────
 
-    useEffect(() => {
-        fetchExercises();
-    }, []);
+    const { data: exercises = [] } = useQuery({
+        queryKey: queryKeys.exercises(),
+        queryFn: fetchExercises,
+        staleTime: 10 * 60 * 1000, // exercise list rarely changes
+    });
 
-    useEffect(() => {
-        const fetchLastWorkout = async () => {
-            if (!exercise) {
-                setLastWorkout(null);
-                return;
-            }
+    const { data: lastWorkout = null, isLoading: isLoadingLastWorkout } = useQuery({
+        queryKey: queryKeys.lastWorkout(exercise),
+        queryFn: () => fetchLastWorkout(exercise),
+        enabled: !!exercise, // only fetch when an exercise is selected
+        staleTime: 0,        // always re-validate — new workouts invalidate this
+    });
 
-            setIsLoadingLastWorkout(true);
-            try {
-                const response = await api.get(`workouts/last/?exercise_id=${exercise}`);
-                setLastWorkout(response.data.data);
-            } catch (error) {
-                console.error('Failed to fetch last workout', error);
-                setLastWorkout(null);
-            } finally {
-                setIsLoadingLastWorkout(false);
-            }
-        };
+    // ── Mutations ─────────────────────────────────────────────────────────────
 
-        fetchLastWorkout();
-    }, [exercise]);
+    const createExerciseMutation = useMutation({
+        mutationFn: createExercise,
+        onSuccess: (newEx) => {
+            // Refresh exercise list and auto-select the new one
+            queryClientInstance.invalidateQueries({ queryKey: queryKeys.exercises() });
+            setExercise(newEx.id.toString());
+            setIsCreatingExercise(false);
+            setNewExerciseName('');
+        },
+        onError: () => alert('Failed to create exercise. It might already exist.'),
+    });
+
+    const saveWorkoutMutation = useMutation({
+        mutationFn: saveWorkout,
+        onSuccess: () => {
+            // Invalidate last-workout and topsets for the saved exercise
+            queryClientInstance.invalidateQueries({ queryKey: queryKeys.lastWorkout(exercise) });
+            queryClientInstance.invalidateQueries({ queryKey: queryKeys.topsets(exercise) });
+            navigate('/graph');
+        },
+        onError: () => alert('Failed to submit workout'),
+    });
+
+    // ── Handlers ──────────────────────────────────────────────────────────────
 
     // Close dropdown when clicking outside
-    useEffect(() => {
+    React.useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
@@ -70,17 +75,7 @@ function Workout() {
 
     const handleCreateExercise = async () => {
         if (!newExerciseName.trim()) return;
-
-        try {
-            const response = await api.post('exercises/', { name: newExerciseName.trim() });
-            await fetchExercises();
-            setExercise(response.data.id);
-            setIsCreatingExercise(false);
-            setNewExerciseName('');
-        } catch (error) {
-            console.error('Failed to create exercise', error);
-            alert('Failed to create exercise. It might already exist.');
-        }
+        createExerciseMutation.mutate(newExerciseName.trim());
     };
 
     const handleAddSet = () => {
@@ -117,21 +112,7 @@ function Workout() {
             alert('Please select an exercise.');
             return;
         }
-        setIsSubmitting(true);
-        try {
-            await api.post('workouts/', {
-                date,
-                exercise,
-                notes,
-                sets
-            });
-            navigate('/graph');
-        } catch (error) {
-            console.error('Failed to submit workout', error);
-            alert('Failed to submit workout');
-        } finally {
-            setIsSubmitting(false);
-        }
+        saveWorkoutMutation.mutate({ date, exercise, notes, sets });
     };
 
     return (
@@ -436,10 +417,10 @@ function Workout() {
                         <div className="pt-8 border-t border-gray-800">
                             <button
                                 type="submit"
-                                disabled={isSubmitting || !exercise}
+                                disabled={saveWorkoutMutation.isPending || !exercise}
                                 className="w-full py-4 px-4 rounded-2xl shadow-lg shadow-green-600/20 text-base font-bold text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isSubmitting ? 'Saving...' : (
+                                {saveWorkoutMutation.isPending ? 'Saving...' : (
                                     <>
                                         <Save className="w-5 h-5" /> Save Workout
                                     </>

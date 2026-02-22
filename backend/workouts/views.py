@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
+from django.db.models import Max, Sum, Count, ExpressionWrapper, FloatField, F
 from rest_framework import generics, views
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Exercise, WorkoutSession, WorkoutExercise, SetEntry
 from .serializers import ExerciseSerializer, WorkoutSerializer
-import pandas as pd
 
 
 class RegisterView(views.APIView):
@@ -70,7 +70,8 @@ class LastWorkoutView(views.APIView):
 
         # Get the sets for this workout exercise
         sets = SetEntry.objects.filter(
-            workout_exercise=last_workout_exercise).order_by('order')
+            workout_exercise=last_workout_exercise
+        ).select_related('intensity_method').order_by('order')
 
         sets_data = []
         for s in sets:
@@ -97,38 +98,42 @@ class TopsetsView(views.APIView):
     def get(self, request):
         exercise_id = request.query_params.get('exercise_id')
 
-        sets = SetEntry.objects.filter(
-            workout_exercise__workout_session__user=request.user)
+        qs = SetEntry.objects.filter(
+            workout_exercise__workout_session__user=request.user
+        )
         if exercise_id:
-            sets = sets.filter(workout_exercise__exercise_id=exercise_id)
+            qs = qs.filter(workout_exercise__exercise_id=exercise_id)
 
-        if not sets.exists():
-            return Response({"data": []})
+        # Single SQL query: group by date, compute topset volume, max weight,
+        # and whether any set on that date used an intensity method.
+        rows = (
+            qs
+            .annotate(date=F('workout_exercise__workout_session__date'))
+            .values('date')
+            .annotate(
+                topset=Max(
+                    ExpressionWrapper(F('weight') * F('reps'),
+                                      output_field=FloatField())
+                ),
+                max_weight=Max('weight'),
+                total_volume=Sum(
+                    ExpressionWrapper(F('weight') * F('reps'),
+                                      output_field=FloatField())
+                ),
+                intensity_count=Count('intensity_method'),
+            )
+            .order_by('date')
+        )
 
-        data = []
-        for s in sets:
-            data.append({
-                'date': s.workout_exercise.workout_session.date,
-                'volume': s.volume(),
-                'weight': s.weight,
-                'has_intensity': s.intensity_method_id is not None
-            })
+        result = [
+            {
+                'date': str(r['date']),
+                'topset': r['topset'],
+                'max_weight': r['max_weight'],
+                'total_volume': r['total_volume'],
+                'has_intensity': r['intensity_count'] > 0,
+            }
+            for r in rows
+        ]
 
-        df = pd.DataFrame(data)
-
-        # Group by date, compute max volume, max weight, and any intensity
-        grouped = df.groupby('date').agg(
-            topset=('volume', 'max'),
-            max_weight=('weight', 'max'),
-            has_intensity=('has_intensity', 'any')
-        ).reset_index()
-
-        grouped = grouped.sort_values('date')
-
-        # Convert date to string and has_intensity to bool
-        grouped['date'] = grouped['date'].astype(str)
-        grouped['has_intensity'] = grouped['has_intensity'].astype(bool)
-
-        result = grouped.to_dict('records')
-
-        return Response({"data": result})
+        return Response({'data': result})
