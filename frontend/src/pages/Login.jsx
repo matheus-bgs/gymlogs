@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dumbbell, LogIn } from 'lucide-react';
 import api from '../api/axios';
@@ -8,12 +8,7 @@ function Login() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [dbDebug, setDbDebug] = useState(null);
     const navigate = useNavigate();
-
-    useEffect(() => {
-        api.get('debug-db/').then(res => setDbDebug(res.data)).catch(err => setDbDebug({ status: 'error', detail: String(err) }));
-    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -46,18 +41,6 @@ function Login() {
                         Sign in to log your next workout
                     </p>
                 </div>
-
-                {dbDebug && (
-                    <div className="bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded-lg p-3 font-mono">
-                        <p className={dbDebug.status === 'connected' ? 'text-green-400' : 'text-red-400'}>
-                            DB: {dbDebug.status}
-                        </p>
-                        {dbDebug.users && dbDebug.users.map(u => (
-                            <p key={u.username}>user: {u.username} | active: {String(u.is_active)} | superuser: {String(u.is_superuser)}</p>
-                        ))}
-                        {dbDebug.detail && <pre className="text-red-400 whitespace-pre-wrap break-all mt-1">{dbDebug.detail.slice(0, 600)}</pre>}
-                    </div>
-                )}
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     {error && (
