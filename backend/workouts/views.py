@@ -1,10 +1,22 @@
 from django.shortcuts import render
+from django.contrib.auth.models import User
 from rest_framework import generics, views
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Exercise, WorkoutSession, WorkoutExercise, SetEntry
 from .serializers import ExerciseSerializer, WorkoutSerializer
 import pandas as pd
+
+
+class DebugDBView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            users = list(User.objects.values('username', 'is_active', 'is_superuser'))
+            return Response({'status': 'connected', 'users': users})
+        except Exception as e:
+            return Response({'status': 'error', 'detail': str(e)}, status=500)
 
 
 class ExerciseListView(generics.ListCreateAPIView):
