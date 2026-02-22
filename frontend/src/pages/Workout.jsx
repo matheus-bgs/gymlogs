@@ -139,8 +139,8 @@ function Workout() {
             <div className="bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl overflow-hidden">
                 <div className="px-6 py-8 sm:p-10">
                     <div className="flex items-center gap-3 mb-8">
-                        <div className="h-12 w-12 bg-blue-600/10 rounded-xl flex items-center justify-center border border-blue-500/20">
-                            <Activity className="h-6 w-6 text-blue-500" />
+                        <div className="h-12 w-12 bg-green-600/10 rounded-xl flex items-center justify-center border border-green-500/20">
+                            <Activity className="h-6 w-6 text-green-500" />
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold text-white tracking-tight">Log Workout</h2>
@@ -158,7 +158,7 @@ function Workout() {
                                 <input
                                     type="date"
                                     required
-                                    className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
                                     value={date}
                                     onChange={(e) => setDate(e.target.value)}
                                 />
@@ -172,7 +172,7 @@ function Workout() {
                                         <button
                                             type="button"
                                             onClick={() => setIsCreatingExercise(true)}
-                                            className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1"
+                                            className="text-green-400 hover:text-green-300 text-xs flex items-center gap-1"
                                         >
                                             <Plus className="w-3 h-3" /> New
                                         </button>
@@ -183,7 +183,7 @@ function Workout() {
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
-                                            className="flex-1 px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                            className="flex-1 px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
                                             placeholder="Exercise name..."
                                             value={newExerciseName}
                                             onChange={(e) => setNewExerciseName(e.target.value)}
@@ -192,7 +192,7 @@ function Workout() {
                                         <button
                                             type="button"
                                             onClick={handleCreateExercise}
-                                            className="px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
+                                            className="px-4 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors"
                                         >
                                             Add
                                         </button>
@@ -210,7 +210,7 @@ function Workout() {
                                 ) : (
                                     <div className="relative" ref={dropdownRef}>
                                         <div
-                                            className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all cursor-pointer flex items-center justify-between"
+                                            className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus-within:ring-2 focus-within:ring-green-500 focus-within:border-transparent transition-all cursor-pointer flex items-center justify-between"
                                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                         >
                                             <span className={exercise ? "text-white" : "text-gray-500"}>
@@ -226,7 +226,7 @@ function Workout() {
                                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                                         <input
                                                             type="text"
-                                                            className="w-full pl-9 pr-4 py-2 bg-gray-950 border border-gray-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                            className="w-full pl-9 pr-4 py-2 bg-gray-950 border border-gray-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
                                                             placeholder="Search exercises..."
                                                             value={searchQuery}
                                                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -242,7 +242,7 @@ function Workout() {
                                                         .map(ex => (
                                                             <div
                                                                 key={ex.id}
-                                                                className={`px-4 py-3 cursor-pointer hover:bg-gray-800 transition-colors text-sm ${exercise === ex.id.toString() ? 'bg-blue-600/20 text-blue-400' : 'text-gray-300'}`}
+                                                                className={`px-4 py-3 cursor-pointer hover:bg-gray-800 transition-colors text-sm ${exercise === ex.id.toString() ? 'bg-green-600/20 text-green-400' : 'text-gray-300'}`}
                                                                 onClick={() => {
                                                                     setExercise(ex.id.toString());
                                                                     setIsDropdownOpen(false);
@@ -268,7 +268,7 @@ function Workout() {
                                     <FileText className="w-4 h-4 text-gray-500" /> Notes
                                 </label>
                                 <textarea
-                                    className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                                     rows="2"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
@@ -282,11 +282,11 @@ function Workout() {
                         {exercise && (
                             <div className="pt-6 border-t border-gray-800">
                                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                    <Activity className="w-5 h-5 text-blue-500" /> Last Workout
+                                    <Activity className="w-5 h-5 text-green-500" /> Last Workout
                                 </h3>
                                 {isLoadingLastWorkout ? (
                                     <div className="flex items-center justify-center py-4">
-                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
                                     </div>
                                 ) : lastWorkout ? (
                                     <div className="bg-gray-950 rounded-2xl p-5 border border-gray-800">
@@ -296,7 +296,7 @@ function Workout() {
                                             </span>
                                         </div>
                                         {lastWorkout.notes && (
-                                            <p className="text-sm text-gray-300 mb-4 italic border-l-2 border-blue-500 pl-3 py-1 bg-blue-500/5 rounded-r-lg">
+                                            <p className="text-sm text-gray-300 mb-4 italic border-l-2 border-green-500 pl-3 py-1 bg-green-500/5 rounded-r-lg">
                                                 "{lastWorkout.notes}"
                                             </p>
                                         )}
@@ -312,7 +312,7 @@ function Workout() {
                                                         </span>
                                                         <div className="flex gap-1 mt-1">
                                                             {set.intensity_method !== 'none' && (
-                                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-medium">
+                                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">
                                                                     {set.intensity_method}
                                                                 </span>
                                                             )}
@@ -355,7 +355,7 @@ function Workout() {
                                                 type="number"
                                                 step="0.5"
                                                 required
-                                                className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 value={set.weight}
                                                 onChange={(e) => handleSetChange(index, 'weight', parseFloat(e.target.value))}
                                                 placeholder="0.0"
@@ -367,7 +367,7 @@ function Workout() {
                                             <input
                                                 type="number"
                                                 required
-                                                className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 value={set.reps}
                                                 onChange={(e) => handleSetChange(index, 'reps', parseInt(e.target.value))}
                                                 placeholder="0"
@@ -377,7 +377,7 @@ function Workout() {
                                         <div className="flex-1 min-w-[140px]">
                                             <label className="block text-xs font-medium text-gray-400 mb-1.5">Intensity Method</label>
                                             <select
-                                                className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                 value={set.intensity_method}
                                                 onChange={(e) => handleSetChange(index, 'intensity_method', e.target.value)}
                                                 disabled={!exercise}
@@ -437,7 +437,7 @@ function Workout() {
                             <button
                                 type="submit"
                                 disabled={isSubmitting || !exercise}
-                                className="w-full py-4 px-4 rounded-2xl shadow-lg shadow-blue-600/20 text-base font-bold text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full py-4 px-4 rounded-2xl shadow-lg shadow-green-600/20 text-base font-bold text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting ? 'Saving...' : (
                                     <>

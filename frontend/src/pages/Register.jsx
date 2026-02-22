@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dumbbell, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import api from '../api/axios';
 
 function Register() {
@@ -41,8 +41,8 @@ function Register() {
         <div className="min-h-screen flex items-center justify-center bg-gray-950 py-12 px-4 sm:px-6 lg:px-8 font-sans">
             <div className="max-w-md w-full space-y-8 bg-gray-900 p-10 rounded-3xl border border-gray-800 shadow-2xl">
                 <div className="flex flex-col items-center">
-                    <div className="h-16 w-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mb-4 border border-blue-500/20">
-                        <Dumbbell className="h-8 w-8 text-blue-500" />
+                    <div className="flex items-center justify-center mb-4">
+                        <img src="/gymlogs_logo.png" alt="Gymlogs" className="h-24 w-auto object-contain" />
                     </div>
                     <h2 className="text-center text-3xl font-extrabold text-white tracking-tight">
                         Create an account
@@ -64,7 +64,7 @@ function Register() {
                             <input
                                 type="text"
                                 required
-                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
                                 placeholder="Choose a username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
@@ -74,7 +74,7 @@ function Register() {
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">Email <span className="text-gray-500">(optional)</span></label>
                             <input
                                 type="email"
-                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
                                 placeholder="you@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -85,7 +85,7 @@ function Register() {
                             <input
                                 type="password"
                                 required
-                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -96,7 +96,7 @@ function Register() {
                             <input
                                 type="password"
                                 required
-                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
                                 placeholder="••••••••"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -107,7 +107,7 @@ function Register() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="group relative w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+                        className="group relative w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-600/20"
                     >
                         {isLoading ? 'Creating account...' : (
                             <>
@@ -121,7 +121,7 @@ function Register() {
                         <button
                             type="button"
                             onClick={() => navigate('/login')}
-                            className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                            className="text-green-400 hover:text-green-300 font-medium transition-colors"
                         >
                             Sign in
                         </button>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dumbbell, LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 
 function Login() {
@@ -31,8 +31,8 @@ function Login() {
         <div className="min-h-screen flex items-center justify-center bg-gray-950 py-12 px-4 sm:px-6 lg:px-8 font-sans">
             <div className="max-w-md w-full space-y-8 bg-gray-900 p-10 rounded-3xl border border-gray-800 shadow-2xl">
                 <div className="flex flex-col items-center">
-                    <div className="h-16 w-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mb-4 border border-blue-500/20">
-                        <Dumbbell className="h-8 w-8 text-blue-500" />
+                    <div className="flex items-center justify-center mb-4">
+                        <img src="/gymlogs_logo.png" alt="Gymlogs" className="h-24 w-auto object-contain" />
                     </div>
                     <h2 className="text-center text-3xl font-extrabold text-white tracking-tight">
                         Welcome back
@@ -54,7 +54,7 @@ function Login() {
                             <input
                                 type="text"
                                 required
-                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
                                 placeholder="Enter your username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
@@ -65,7 +65,7 @@ function Login() {
                             <input
                                 type="password"
                                 required
-                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -76,7 +76,7 @@ function Login() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="group relative w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+                        className="group relative w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-600/20"
                     >
                         {isLoading ? 'Signing in...' : (
                             <>
@@ -90,7 +90,7 @@ function Login() {
                         <button
                             type="button"
                             onClick={() => navigate('/register')}
-                            className="text-blue-400 hover:text-blue-300 font-medium transition-colors inline-flex items-center gap-1"
+                            className="text-green-400 hover:text-green-300 font-medium transition-colors inline-flex items-center gap-1"
                         >
                             Register <UserPlus className="w-3.5 h-3.5" />
                         </button>
