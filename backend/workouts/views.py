@@ -13,10 +13,12 @@ class DebugDBView(views.APIView):
 
     def get(self, request):
         try:
-            users = list(User.objects.values('username', 'is_active', 'is_superuser'))
+            users = list(User.objects.values(
+                'username', 'is_active', 'is_superuser'))
             return Response({'status': 'connected', 'users': users})
         except Exception as e:
-            return Response({'status': 'error', 'detail': str(e)}, status=500)
+            import traceback
+            return Response({'status': 'error', 'detail': traceback.format_exc()}, status=500)
 
 
 class ExerciseListView(generics.ListCreateAPIView):

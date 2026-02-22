@@ -46,7 +46,7 @@ function Login() {
                         Sign in to log your next workout
                     </p>
                 </div>
-                
+
                 {dbDebug && (
                     <div className="bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded-lg p-3 font-mono">
                         <p className={dbDebug.status === 'connected' ? 'text-green-400' : 'text-red-400'}>
@@ -55,7 +55,7 @@ function Login() {
                         {dbDebug.users && dbDebug.users.map(u => (
                             <p key={u.username}>user: {u.username} | active: {String(u.is_active)} | superuser: {String(u.is_superuser)}</p>
                         ))}
-                        {dbDebug.detail && <p className="text-red-400">{dbDebug.detail}</p>}
+                        {dbDebug.detail && <pre className="text-red-400 whitespace-pre-wrap break-all mt-1">{dbDebug.detail.slice(0, 600)}</pre>}
                     </div>
                 )}
 
@@ -68,30 +68,30 @@ function Login() {
                     <div className="space-y-5">
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">Username</label>
-                            <input 
-                                type="text" 
-                                required 
-                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm" 
+                            <input
+                                type="text"
+                                required
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
                                 placeholder="Enter your username"
-                                value={username} 
-                                onChange={(e) => setUsername(e.target.value)} 
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
-                            <input 
-                                type="password" 
-                                required 
-                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm" 
+                            <input
+                                type="password"
+                                required
+                                className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
                                 placeholder="••••••••"
-                                value={password} 
-                                onChange={(e) => setPassword(e.target.value)} 
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={isLoading}
                         className="group relative w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
                     >
