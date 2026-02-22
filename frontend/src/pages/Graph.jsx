@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Plot from 'react-plotly.js';
-import { TrendingUp, Filter } from 'lucide-react';
+import { TrendingUp, Search, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys, fetchExercises, fetchTopsets } from '../lib/queries';
+import { exName } from '../lib/i18nUtils';
 
 function Graph() {
     const [selectedExercise, setSelectedExercise] = useState('');
     const [plotType, setPlotType] = useState('topset'); // 'topset', 'max_weight', or 'total_volume'
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const dropdownRef = useRef(null);
+    const { t, i18n } = useTranslation();
 
     // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -16,12 +22,26 @@ function Graph() {
         staleTime: 10 * 60 * 1000,
     });
 
-    // Auto-select first exercise once list is loaded
+    // Auto-select first exercise (alphabetical) once list is loaded
     useEffect(() => {
         if (exercises.length > 0 && !selectedExercise) {
-            setSelectedExercise(exercises[0].id.toString());
+            const sorted = [...exercises].sort((a, b) =>
+                exName(a, i18n.language).localeCompare(exName(b, i18n.language))
+            );
+            setSelectedExercise(sorted[0].id.toString());
         }
     }, [exercises, selectedExercise]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const { data: plotData = { x: [], topset: [], max_weight: [], total_volume: [], has_intensity: [] }, isLoading } = useQuery({
         queryKey: queryKeys.topsets(selectedExercise),
@@ -40,8 +60,8 @@ function Graph() {
                                 <TrendingUp className="h-6 w-6 text-green-500" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-white tracking-tight">Progress Overview</h2>
-                                <p className="text-sm text-gray-400">Track your progress over time.</p>
+                                <h2 className="text-2xl font-bold text-white tracking-tight">{t('graph.title')}</h2>
+                                <p className="text-sm text-gray-400">{t('graph.subtitle')}</p>
                             </div>
                         </div>
 
@@ -51,35 +71,84 @@ function Graph() {
                                     onClick={() => setPlotType('topset')}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${plotType === 'topset' ? 'bg-green-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'}`}
                                 >
-                                    Topset Volume
+                                    {t('graph.topsetVolume')}
                                 </button>
                                 <button
                                     onClick={() => setPlotType('max_weight')}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${plotType === 'max_weight' ? 'bg-green-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'}`}
                                 >
-                                    Max Weight
+                                    {t('graph.maxWeight')}
                                 </button>
                                 <button
                                     onClick={() => setPlotType('total_volume')}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${plotType === 'total_volume' ? 'bg-green-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'}`}
                                 >
-                                    Total Volume
+                                    {t('graph.totalVolume')}
                                 </button>
                             </div>
 
-                            <div className="min-w-[240px] relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Filter className="h-4 w-4 text-gray-500" />
-                                </div>
-                                <select
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all appearance-none"
-                                    value={selectedExercise}
-                                    onChange={(e) => setSelectedExercise(e.target.value)}
+                            <div className="min-w-[240px] relative" ref={dropdownRef}>
+                                <div
+                                    className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus-within:ring-2 focus-within:ring-green-500 focus-within:border-transparent transition-all cursor-pointer flex items-center justify-between"
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 >
-                                    {exercises.map(ex => (
-                                        <option key={ex.id} value={ex.id}>{ex.name}</option>
-                                    ))}
-                                </select>
+                                    <span className={selectedExercise ? 'text-white' : 'text-gray-500'}>
+                                        {selectedExercise
+                                            ? exName(exercises.find(e => e.id === parseInt(selectedExercise)), i18n.language)
+                                            : '—'}
+                                    </span>
+                                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                </div>
+
+                                {isDropdownOpen && (
+                                    <div className="absolute z-10 w-full mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
+                                        <div className="p-2 border-b border-gray-800">
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                <input
+                                                    type="text"
+                                                    className="w-full pl-9 pr-4 py-2 bg-gray-950 border border-gray-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                                                    placeholder={t('workout.searchExercises')}
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    autoFocus
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="max-h-60 overflow-y-auto">
+                                            {exercises
+                                                .filter(ex => {
+                                                    const q = searchQuery.toLowerCase();
+                                                    return ex.name.toLowerCase().includes(q) ||
+                                                        (ex.name_pt && ex.name_pt.toLowerCase().includes(q));
+                                                })
+                                                .sort((a, b) => exName(a, i18n.language).localeCompare(exName(b, i18n.language)))
+                                                .map(ex => (
+                                                    <div
+                                                        key={ex.id}
+                                                        className={`px-4 py-3 cursor-pointer hover:bg-gray-800 transition-colors text-sm ${selectedExercise === ex.id.toString() ? 'bg-green-600/20 text-green-400' : 'text-gray-300'}`}
+                                                        onClick={() => {
+                                                            setSelectedExercise(ex.id.toString());
+                                                            setIsDropdownOpen(false);
+                                                            setSearchQuery('');
+                                                        }}
+                                                    >
+                                                        {exName(ex, i18n.language)}
+                                                    </div>
+                                                ))}
+                                            {exercises.filter(ex => {
+                                                const q = searchQuery.toLowerCase();
+                                                return ex.name.toLowerCase().includes(q) ||
+                                                    (ex.name_pt && ex.name_pt.toLowerCase().includes(q));
+                                            }).length === 0 && (
+                                                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                                        {t('workout.noExercisesFound')}
+                                                    </div>
+                                                )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -92,7 +161,7 @@ function Graph() {
                         ) : plotData.x.length === 0 ? (
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
                                 <TrendingUp className="h-12 w-12 mb-4 opacity-20" />
-                                <p>No data available for this selection.</p>
+                                <p>{t('graph.noData')}</p>
                             </div>
                         ) : (
                             <Plot
@@ -138,7 +207,7 @@ function Graph() {
                                         zerolinecolor: '#1f2937',
                                         tickfont: { color: '#6b7280' },
                                         title: {
-                                            text: plotType === 'topset' ? 'Topset Volume (Weight × Reps)' : plotType === 'max_weight' ? 'Max Weight (kg)' : 'Total Volume (kg)',
+                                            text: plotType === 'topset' ? t('graph.yAxisTopset') : plotType === 'max_weight' ? t('graph.yAxisMaxWeight') : t('graph.yAxisTotalVolume'),
                                             font: { color: '#9ca3af', size: 12 }
                                         },
                                         showgrid: true,

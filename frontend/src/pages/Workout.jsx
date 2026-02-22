@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Save, Calendar, Activity, FileText, X, Search, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, fetchExercises, fetchLastWorkout, saveWorkout, createExercise } from '../lib/queries';
+import { exName } from '../lib/i18nUtils';
 
 function Workout() {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -19,6 +21,7 @@ function Workout() {
 
     const navigate = useNavigate();
     const queryClientInstance = useQueryClient();
+    const { t, i18n } = useTranslation();
 
     // ── Queries ──────────────────────────────────────────────────────────────
 
@@ -46,7 +49,7 @@ function Workout() {
             setIsCreatingExercise(false);
             setNewExerciseName('');
         },
-        onError: () => alert('Failed to create exercise. It might already exist.'),
+        onError: () => alert(t('workout.createExerciseFailed')),
     });
 
     const saveWorkoutMutation = useMutation({
@@ -57,7 +60,7 @@ function Workout() {
             queryClientInstance.invalidateQueries({ queryKey: queryKeys.topsets(exercise) });
             navigate('/graph');
         },
-        onError: () => alert('Failed to submit workout'),
+        onError: () => alert(t('workout.saveWorkoutFailed')),
     });
 
     // ── Handlers ──────────────────────────────────────────────────────────────
@@ -105,11 +108,11 @@ function Workout() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (sets.length === 0) {
-            alert('Please add at least one set.');
+            alert(t('workout.needOneSet'));
             return;
         }
         if (!exercise) {
-            alert('Please select an exercise.');
+            alert(t('workout.needExercise'));
             return;
         }
         saveWorkoutMutation.mutate({ date, exercise, notes, sets });
@@ -124,8 +127,8 @@ function Workout() {
                             <Activity className="h-6 w-6 text-green-500" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white tracking-tight">Log Workout</h2>
-                            <p className="text-sm text-gray-400">Record your sets, reps, and intensity.</p>
+                            <h2 className="text-2xl font-bold text-white tracking-tight">{t('workout.title')}</h2>
+                            <p className="text-sm text-gray-400">{t('workout.subtitle')}</p>
                         </div>
                     </div>
 
@@ -134,7 +137,7 @@ function Workout() {
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
-                                    <Calendar className="w-4 h-4 text-gray-500" /> Date
+                                    <Calendar className="w-4 h-4 text-gray-500" /> {t('workout.date')}
                                 </label>
                                 <input
                                     type="date"
@@ -147,7 +150,7 @@ function Workout() {
                             <div className="space-y-2">
                                 <label className="flex items-center justify-between text-sm font-medium text-gray-300">
                                     <span className="flex items-center gap-2">
-                                        <Activity className="w-4 h-4 text-gray-500" /> Exercise
+                                        <Activity className="w-4 h-4 text-gray-500" /> {t('workout.exercise')}
                                     </span>
                                     {!isCreatingExercise && (
                                         <button
@@ -155,7 +158,7 @@ function Workout() {
                                             onClick={() => setIsCreatingExercise(true)}
                                             className="text-green-400 hover:text-green-300 text-xs flex items-center gap-1"
                                         >
-                                            <Plus className="w-3 h-3" /> New
+                                            <Plus className="w-3 h-3" /> {t('workout.newExercise')}
                                         </button>
                                     )}
                                 </label>
@@ -165,7 +168,7 @@ function Workout() {
                                         <input
                                             type="text"
                                             className="flex-1 px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
-                                            placeholder="Exercise name..."
+                                            placeholder={t('workout.exerciseNamePlaceholder')}
                                             value={newExerciseName}
                                             onChange={(e) => setNewExerciseName(e.target.value)}
                                             autoFocus
@@ -175,7 +178,7 @@ function Workout() {
                                             onClick={handleCreateExercise}
                                             className="px-4 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors"
                                         >
-                                            Add
+                                            {t('workout.add')}
                                         </button>
                                         <button
                                             type="button"
@@ -195,7 +198,7 @@ function Workout() {
                                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                         >
                                             <span className={exercise ? "text-white" : "text-gray-500"}>
-                                                {exercise ? exercises.find(e => e.id === parseInt(exercise))?.name : "Select an exercise"}
+                                                {exercise ? exName(exercises.find(e => e.id === parseInt(exercise)), i18n.language) : t('workout.selectExercise')}
                                             </span>
                                             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                                         </div>
@@ -208,7 +211,7 @@ function Workout() {
                                                         <input
                                                             type="text"
                                                             className="w-full pl-9 pr-4 py-2 bg-gray-950 border border-gray-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
-                                                            placeholder="Search exercises..."
+                                                            placeholder={t('workout.searchExercises')}
                                                             value={searchQuery}
                                                             onChange={(e) => setSearchQuery(e.target.value)}
                                                             onClick={(e) => e.stopPropagation()}
@@ -218,8 +221,12 @@ function Workout() {
                                                 </div>
                                                 <div className="max-h-60 overflow-y-auto">
                                                     {exercises
-                                                        .filter(ex => ex.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                                        .filter(ex => {
+                                                            const q = searchQuery.toLowerCase();
+                                                            return ex.name.toLowerCase().includes(q) ||
+                                                                (ex.name_pt && ex.name_pt.toLowerCase().includes(q));
+                                                        })
+                                                        .sort((a, b) => exName(a, i18n.language).localeCompare(exName(b, i18n.language)))
                                                         .map(ex => (
                                                             <div
                                                                 key={ex.id}
@@ -230,14 +237,18 @@ function Workout() {
                                                                     setSearchQuery('');
                                                                 }}
                                                             >
-                                                                {ex.name}
+                                                                {exName(ex, i18n.language)}
                                                             </div>
                                                         ))}
-                                                    {exercises.filter(ex => ex.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                                                        <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                                                            No exercises found
-                                                        </div>
-                                                    )}
+                                                    {exercises.filter(ex => {
+                                                        const q = searchQuery.toLowerCase();
+                                                        return ex.name.toLowerCase().includes(q) ||
+                                                            (ex.name_pt && ex.name_pt.toLowerCase().includes(q));
+                                                    }).length === 0 && (
+                                                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                                                {t('workout.noExercisesFound')}
+                                                            </div>
+                                                        )}
                                                 </div>
                                             </div>
                                         )}
@@ -246,14 +257,14 @@ function Workout() {
                             </div>
                             <div className="sm:col-span-2 space-y-2">
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
-                                    <FileText className="w-4 h-4 text-gray-500" /> Notes
+                                    <FileText className="w-4 h-4 text-gray-500" /> {t('workout.notes')}
                                 </label>
                                 <textarea
                                     className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                                     rows="2"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="How did it feel? Any pain or PRs?"
+                                    placeholder={t('workout.notesPlaceholder')}
                                     disabled={!exercise}
                                 />
                             </div>
@@ -263,7 +274,7 @@ function Workout() {
                         {exercise && (
                             <div className="pt-6 border-t border-gray-800">
                                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                    <Activity className="w-5 h-5 text-green-500" /> Last Workout
+                                    <Activity className="w-5 h-5 text-green-500" /> {t('workout.lastWorkout')}
                                 </h3>
                                 {isLoadingLastWorkout ? (
                                     <div className="flex items-center justify-center py-4">
@@ -310,7 +321,7 @@ function Workout() {
                                     </div>
                                 ) : (
                                     <div className="bg-gray-950 rounded-2xl p-5 border border-gray-800 text-center">
-                                        <p className="text-sm text-gray-500">No previous workout found for this exercise.</p>
+                                        <p className="text-sm text-gray-500">{t('workout.noLastWorkout')}</p>
                                     </div>
                                 )}
                             </div>
@@ -319,8 +330,8 @@ function Workout() {
                         {/* Sets section */}
                         <div className="pt-6 border-t border-gray-800">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-semibold text-white">Working Sets</h3>
-                                <span className="text-sm text-gray-400 bg-gray-800 px-3 py-1 rounded-full">{sets.length} sets total</span>
+                                <h3 className="text-lg font-semibold text-white">{t('workout.workingSets')}</h3>
+                                <span className="text-sm text-gray-400 bg-gray-800 px-3 py-1 rounded-full">{t('workout.setsTotal', { count: sets.length })}</span>
                             </div>
 
                             <div className="space-y-4">
@@ -331,7 +342,7 @@ function Workout() {
                                         </div>
 
                                         <div className="flex-1 min-w-[100px]">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1.5">Weight (kg/lbs)</label>
+                                            <label className="block text-xs font-medium text-gray-400 mb-1.5">{t('workout.weight')}</label>
                                             <input
                                                 type="number"
                                                 step="0.5"
@@ -344,7 +355,7 @@ function Workout() {
                                             />
                                         </div>
                                         <div className="flex-1 min-w-[100px]">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1.5">Reps</label>
+                                            <label className="block text-xs font-medium text-gray-400 mb-1.5">{t('workout.reps')}</label>
                                             <input
                                                 type="number"
                                                 required
@@ -356,16 +367,16 @@ function Workout() {
                                             />
                                         </div>
                                         <div className="flex-1 min-w-[140px]">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1.5">Intensity Method</label>
+                                            <label className="block text-xs font-medium text-gray-400 mb-1.5">{t('workout.intensityMethod')}</label>
                                             <select
                                                 className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                 value={set.intensity_method}
                                                 onChange={(e) => handleSetChange(index, 'intensity_method', e.target.value)}
                                                 disabled={!exercise}
                                             >
-                                                <option value="none">Standard</option>
-                                                <option value="myoreps">Myo-reps</option>
-                                                <option value="dropset">Drop Set</option>
+                                                <option value="none">{t('workout.standard')}</option>
+                                                <option value="myoreps">{t('workout.myoreps')}</option>
+                                                <option value="dropset">{t('workout.dropset')}</option>
                                             </select>
                                         </div>
                                         <div className="flex items-center h-[46px] px-2">
@@ -385,7 +396,7 @@ function Workout() {
                                                     </div>
                                                 </div>
                                                 <span className={`text-sm font-medium transition-colors ${set.reached_failure ? 'text-red-400' : 'text-gray-400 group-hover/check:text-gray-300'}`}>
-                                                    Failure
+                                                    {t('workout.failure')}
                                                 </span>
                                             </label>
                                         </div>
@@ -410,7 +421,7 @@ function Workout() {
                                 className="mt-6 w-full py-4 border-2 border-dashed border-gray-700 rounded-2xl text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800/50 transition-all flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-gray-700 disabled:hover:text-gray-400"
                                 disabled={!exercise}
                             >
-                                <Plus className="w-5 h-5" /> Add Another Set
+                                <Plus className="w-5 h-5" /> {t('workout.addAnotherSet')}
                             </button>
                         </div>
 
@@ -420,9 +431,9 @@ function Workout() {
                                 disabled={saveWorkoutMutation.isPending || !exercise}
                                 className="w-full py-4 px-4 rounded-2xl shadow-lg shadow-green-600/20 text-base font-bold text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {saveWorkoutMutation.isPending ? 'Saving...' : (
+                                {saveWorkoutMutation.isPending ? t('workout.saving') : (
                                     <>
-                                        <Save className="w-5 h-5" /> Save Workout
+                                        <Save className="w-5 h-5" /> {t('workout.saveWorkout')}
                                     </>
                                 )}
                             </button>

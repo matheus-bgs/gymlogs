@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, UserPlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import queryClient from '../lib/queryClient';
 import { queryKeys, fetchExercises } from '../lib/queries';
@@ -11,6 +12,7 @@ function Login() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -28,7 +30,7 @@ function Login() {
             navigate('/workout');
         } catch (err) {
             console.error('Login failed', err);
-            setError('Invalid username or password');
+            setError(t('login.invalidCredentials'));
         } finally {
             setIsLoading(false);
         }
@@ -42,10 +44,10 @@ function Login() {
                         <img src="/gymlogs_logo.png" alt="Gymlogs" className="h-24 w-auto object-contain" />
                     </div>
                     <h2 className="text-center text-3xl font-extrabold text-white tracking-tight">
-                        Welcome back
+                        {t('login.welcomeBack')}
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-400">
-                        Sign in to log your next workout
+                        {t('login.subtitle')}
                     </p>
                 </div>
 
@@ -57,18 +59,18 @@ function Login() {
                     )}
                     <div className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Username</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('login.username')}</label>
                             <input
                                 type="text"
                                 required
                                 className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
-                                placeholder="Enter your username"
+                                placeholder={t('login.usernamePlaceholder')}
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('login.password')}</label>
                             <input
                                 type="password"
                                 required
@@ -85,21 +87,21 @@ function Login() {
                         disabled={isLoading}
                         className="group relative w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-600/20"
                     >
-                        {isLoading ? 'Signing in...' : (
+                        {isLoading ? t('login.signingIn') : (
                             <>
-                                Sign in <LogIn className="w-4 h-4" />
+                                {t('login.signIn')} <LogIn className="w-4 h-4" />
                             </>
                         )}
                     </button>
 
                     <p className="text-center text-sm text-gray-400">
-                        Don't have an account?{' '}
+                        {t('login.noAccount')}{' '}
                         <button
                             type="button"
                             onClick={() => navigate('/register')}
                             className="text-green-400 hover:text-green-300 font-medium transition-colors inline-flex items-center gap-1"
                         >
-                            Register <UserPlus className="w-3.5 h-3.5" />
+                            {t('login.register')} <UserPlus className="w-3.5 h-3.5" />
                         </button>
                     </p>
                 </form>
@@ -109,3 +111,4 @@ function Login() {
 }
 
 export default Login;
+

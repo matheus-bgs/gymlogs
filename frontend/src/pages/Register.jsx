@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import queryClient from '../lib/queryClient';
 import { queryKeys, fetchExercises } from '../lib/queries';
@@ -13,13 +14,14 @@ function Register() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
         if (password !== confirmPassword) {
-            setError('Passwords do not match.');
+            setError(t('register.passwordMismatch'));
             return;
         }
 
@@ -37,7 +39,7 @@ function Register() {
             });
             navigate('/workout');
         } catch (err) {
-            const detail = err.response?.data?.error || 'Registration failed. Please try again.';
+            const detail = err.response?.data?.error || t('register.registrationFailed');
             setError(detail);
         } finally {
             setIsLoading(false);
@@ -52,10 +54,10 @@ function Register() {
                         <img src="/gymlogs_logo.png" alt="Gymlogs" className="h-24 w-auto object-contain" />
                     </div>
                     <h2 className="text-center text-3xl font-extrabold text-white tracking-tight">
-                        Create an account
+                        {t('register.createAccount')}
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-400">
-                        Start tracking your workouts today
+                        {t('register.subtitle')}
                     </p>
                 </div>
 
@@ -67,18 +69,18 @@ function Register() {
                     )}
                     <div className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Username</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('register.username')}</label>
                             <input
                                 type="text"
                                 required
                                 className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
-                                placeholder="Choose a username"
+                                placeholder={t('register.usernamePlaceholder')}
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Email <span className="text-gray-500">(optional)</span></label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('register.email')} <span className="text-gray-500">{t('register.emailOptional')}</span></label>
                             <input
                                 type="email"
                                 className="appearance-none block w-full px-4 py-3 border border-gray-700 bg-gray-950 placeholder-gray-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all sm:text-sm"
@@ -88,7 +90,7 @@ function Register() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('register.password')}</label>
                             <input
                                 type="password"
                                 required
@@ -99,7 +101,7 @@ function Register() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Confirm Password</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('register.confirmPassword')}</label>
                             <input
                                 type="password"
                                 required
@@ -116,21 +118,21 @@ function Register() {
                         disabled={isLoading}
                         className="group relative w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-600/20"
                     >
-                        {isLoading ? 'Creating account...' : (
+                        {isLoading ? t('register.creatingAccount') : (
                             <>
-                                Create account <UserPlus className="w-4 h-4" />
+                                {t('register.createAccountBtn')} <UserPlus className="w-4 h-4" />
                             </>
                         )}
                     </button>
 
                     <p className="text-center text-sm text-gray-400">
-                        Already have an account?{' '}
+                        {t('register.alreadyHaveAccount')}{' '}
                         <button
                             type="button"
                             onClick={() => navigate('/login')}
                             className="text-green-400 hover:text-green-300 font-medium transition-colors"
                         >
-                            Sign in
+                            {t('register.signIn')}
                         </button>
                     </p>
                 </form>
