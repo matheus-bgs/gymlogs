@@ -290,6 +290,7 @@ function Workout() {
                 queryClient.invalidateQueries({ queryKey: queryKeys.lastWorkout(planExEntry.exercise.id) });
                 queryClient.invalidateQueries({ queryKey: queryKeys.topsets(planExEntry.exercise.id) });
                 queryClient.invalidateQueries({ queryKey: queryKeys.sessionProgress(date, planDayId) });
+                queryClient.invalidateQueries({ queryKey: queryKeys.exercisesWithData() });
 
                 setSessionLog(prev => [...prev, { exerciseName, sets: loggedSets }]);
                 showToast(t('workout.exerciseLogged', { name: exerciseName }));
@@ -305,6 +306,7 @@ function Workout() {
             } else {
                 queryClient.invalidateQueries({ queryKey: queryKeys.lastWorkout(exercise) });
                 queryClient.invalidateQueries({ queryKey: queryKeys.topsets(exercise) });
+                queryClient.invalidateQueries({ queryKey: queryKeys.exercisesWithData() });
                 navigate('/graph');
             }
         },
@@ -424,7 +426,7 @@ function Workout() {
                                                             ? 'bg-green-600 text-white shadow-lg shadow-green-600/20'
                                                             : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
                                                 >
-                                                    {i18n.language === 'pt' ? `Dia ${day.label}` : `Day ${day.label}`}
+                                                    {day.label}
                                                 </button>
                                             ))}
                                         </div>

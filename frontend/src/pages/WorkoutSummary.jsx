@@ -32,7 +32,7 @@ function WorkoutSummary({ date, dayLabel, sessionLog, onReset }) {
                         {date}
                         {dayLabel && (
                             <span className="ml-2 px-2 py-0.5 rounded-full bg-green-600/20 text-green-400 text-xs font-semibold">
-                                Day {dayLabel}
+                                {dayLabel}
                             </span>
                         )}
                     </p>

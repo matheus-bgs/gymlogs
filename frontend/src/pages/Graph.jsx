@@ -3,7 +3,7 @@ import Plot from 'react-plotly.js';
 import { TrendingUp, Search, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { queryKeys, fetchExercises, fetchTopsets } from '../lib/queries';
+import { queryKeys, fetchExercisesWithData, fetchTopsets } from '../lib/queries';
 import { exName } from '../lib/i18nUtils';
 
 function Graph() {
@@ -17,8 +17,8 @@ function Graph() {
     // ── Queries ────────────────────────────────────────────────────────────────
 
     const { data: exercises = [] } = useQuery({
-        queryKey: queryKeys.exercises(),
-        queryFn: fetchExercises,
+        queryKey: queryKeys.exercisesWithData(),
+        queryFn: fetchExercisesWithData,
         staleTime: 10 * 60 * 1000,
     });
 

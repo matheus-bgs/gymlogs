@@ -465,7 +465,7 @@ function Plan() {
                                     ? 'bg-gray-800 text-white border border-b-gray-800 border-gray-700 -mb-px'
                                     : 'text-gray-500 hover:text-gray-300'}`}
                         >
-                            {t('workout.selectDay').startsWith('Select') ? `Day ${day.label}` : `Dia ${day.label}`}
+                            {day.label}
                         </button>
                     ))}
 

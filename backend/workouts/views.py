@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.db.models import Max, Sum, Count, ExpressionWrapper, FloatField, F
-from rest_framework import generics, views
+from rest_framework import generics, views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Exercise, WorkoutSession, WorkoutExercise, SetEntry, WorkoutPlan, PlanDay, PlanExercise
@@ -41,14 +41,27 @@ class DebugDBView(views.APIView):
 
 
 class ExerciseListView(generics.ListCreateAPIView):
-    queryset = Exercise.objects.all()
     serializer_class = ExerciseSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.query_params.get('with_data') == 'true':
+            logged_ids = WorkoutExercise.objects.filter(
+                workout_session__user=self.request.user
+            ).values_list('exercise_id', flat=True).distinct()
+            return Exercise.objects.filter(id__in=logged_ids)
+        return Exercise.objects.all()
 
 
 class WorkoutCreateView(generics.CreateAPIView):
     serializer_class = WorkoutSerializer
     permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'status': 'ok'}, status=status.HTTP_201_CREATED)
 
 
 class LastWorkoutView(views.APIView):
@@ -350,14 +363,27 @@ class DebugDBView(views.APIView):
 
 
 class ExerciseListView(generics.ListCreateAPIView):
-    queryset = Exercise.objects.all()
     serializer_class = ExerciseSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.query_params.get('with_data') == 'true':
+            logged_ids = WorkoutExercise.objects.filter(
+                workout_session__user=self.request.user
+            ).values_list('exercise_id', flat=True).distinct()
+            return Exercise.objects.filter(id__in=logged_ids)
+        return Exercise.objects.all()
 
 
 class WorkoutCreateView(generics.CreateAPIView):
     serializer_class = WorkoutSerializer
     permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'status': 'ok'}, status=status.HTTP_201_CREATED)
 
 
 class LastWorkoutView(views.APIView):

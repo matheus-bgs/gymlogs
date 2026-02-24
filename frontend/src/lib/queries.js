@@ -15,6 +15,7 @@ import api from '../api/axios';
 
 export const queryKeys = {
     exercises: () => ['exercises'],
+    exercisesWithData: () => ['exercisesWithData'],
     lastWorkout: (exerciseId) => ['lastWorkout', String(exerciseId)],
     topsets: (exerciseId) => ['topsets', String(exerciseId)],
     activePlan: () => ['plan'],
@@ -25,6 +26,11 @@ export const queryKeys = {
 
 export const fetchExercises = async () => {
     const { data } = await api.get('exercises/');
+    return data.sort((a, b) => a.name.localeCompare(b.name));
+};
+
+export const fetchExercisesWithData = async () => {
+    const { data } = await api.get('exercises/?with_data=true');
     return data.sort((a, b) => a.name.localeCompare(b.name));
 };
 
