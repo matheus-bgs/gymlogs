@@ -1,7 +1,9 @@
-import React from 'react';
-import { CheckCircle2, LineChart, RotateCcw, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, LineChart, RotateCcw, Calendar, Pencil, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, fetchProfile, updateSet } from '../lib/queries';
 
 /**
  * Session summary screen shown when the user finishes all exercises in a plan day.
@@ -9,12 +11,64 @@ import { useNavigate } from 'react-router-dom';
  * Props:
  *   date        — string, e.g. "2026-02-22"
  *   dayLabel    — string, e.g. "A"
- *   sessionLog  — array of { exerciseName, sets: [{weight, reps, reached_failure, intensity_method}] }
+ *   sessionLog  — array of { exerciseName, sets: [{id?, weight, reps, reached_failure, intensity_method}] }
  *   onReset     — callback to reset the Workout page back to day selector
  */
 function WorkoutSummary({ date, dayLabel, sessionLog, onReset }) {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
+
+    // Unit preference
+    const { data: profile = { weight_unit: 'kg' } } = useQuery({
+        queryKey: queryKeys.profile(),
+        queryFn: fetchProfile,
+        staleTime: 5 * 60 * 1000,
+    });
+    const weightUnit = profile.weight_unit;
+    const displayW = (kg) => weightUnit === 'lbs' ? parseFloat((kg * 2.20462).toFixed(2)) : kg;
+    const inputToKg = (val) => {
+        const num = parseFloat(String(val).replace(',', '.'));
+        return weightUnit === 'lbs' ? parseFloat((num / 2.20462).toFixed(4)) : num;
+    };
+
+    // Local inline-edit state per set (keyed by set id)
+    const [editingId, setEditingId] = useState(null);
+    const [editWeight, setEditWeight] = useState('');
+    const [editReps, setEditReps] = useState('');
+
+    // Mirror sessionLog in local state so edits are reflected immediately
+    const [localLog, setLocalLog] = useState(() => sessionLog.map(e => ({
+        ...e,
+        sets: e.sets.map(s => ({ ...s })),
+    })));
+
+    const updateSetMutation = useMutation({
+        mutationFn: ({ setId, weight, reps }) => updateSet({ setId, weight, reps }),
+        onSuccess: (updatedSet, { exIdx, setIdx }) => {
+            setLocalLog(prev => {
+                const next = prev.map((e, ei) => ei === exIdx
+                    ? { ...e, sets: e.sets.map((s, si) => si === setIdx ? { ...s, weight: updatedSet.weight, reps: updatedSet.reps } : s) }
+                    : e);
+                return next;
+            });
+            queryClient.invalidateQueries({ queryKey: queryKeys.history() });
+        },
+    });
+
+    const startEdit = (set) => {
+        setEditingId(set.id);
+        setEditWeight(String(displayW(set.weight)));
+        setEditReps(String(set.reps));
+    };
+
+    const saveEdit = (set, exIdx, setIdx) => {
+        const kgWeight = inputToKg(editWeight);
+        const repsVal = parseInt(editReps, 10);
+        if (isNaN(kgWeight) || kgWeight < 0 || isNaN(repsVal) || repsVal <= 0) return;
+        updateSetMutation.mutate({ setId: set.id, weight: kgWeight, reps: repsVal, exIdx, setIdx });
+        setEditingId(null);
+    };
 
     return (
         <div className="max-w-2xl mx-auto font-sans">
@@ -39,16 +93,53 @@ function WorkoutSummary({ date, dayLabel, sessionLog, onReset }) {
 
                     {/* Exercise list */}
                     <div className="space-y-3 text-left mb-8">
-                        {sessionLog.map((entry, i) => (
-                            <div key={i} className="bg-gray-950 rounded-2xl border border-gray-800 p-4">
+                        {localLog.map((entry, exIdx) => (
+                            <div key={exIdx} className="bg-gray-950 rounded-2xl border border-gray-800 p-4">
                                 <p className="text-sm font-semibold text-white mb-2">{entry.exerciseName}</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {entry.sets.map((s, j) => (
-                                        <div key={j} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-900 rounded-xl border border-gray-800">
-                                            <span className="text-xs font-bold text-gray-500">{j + 1}</span>
-                                            <span className="text-xs text-white font-medium">
-                                                {s.weight} <span className="text-gray-500">×</span> {s.reps}
-                                            </span>
+                                    {entry.sets.map((s, setIdx) => (
+                                        <div key={setIdx} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-900 rounded-xl border border-gray-800">
+                                            <span className="text-xs font-bold text-gray-500">{setIdx + 1}</span>
+                                            {editingId === s.id && s.id ? (
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="text" inputMode="decimal"
+                                                        className="w-14 px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                                        value={editWeight}
+                                                        onChange={e => setEditWeight(e.target.value)}
+                                                        autoFocus
+                                                    />
+                                                    <span className="text-gray-500 text-xs">×</span>
+                                                    <input
+                                                        type="text" inputMode="numeric"
+                                                        className="w-10 px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                                        value={editReps}
+                                                        onChange={e => setEditReps(e.target.value)}
+                                                    />
+                                                    <button type="button" onClick={() => saveEdit(s, exIdx, setIdx)}
+                                                        className="p-0.5 text-green-400 hover:text-green-300">
+                                                        <Check className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button type="button" onClick={() => setEditingId(null)}
+                                                        className="p-0.5 text-gray-500 hover:text-gray-300">
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    className="flex items-center gap-1 group/setbtn"
+                                                    onClick={() => s.id && startEdit(s)}
+                                                    title={s.id ? t('history.editSet') : undefined}
+                                                >
+                                                    <span className="text-xs text-white font-medium group-hover/setbtn:text-green-400 transition-colors">
+                                                        {displayW(s.weight)} <span className="text-gray-500">{weightUnit}</span>
+                                                        <span className="text-gray-500 mx-0.5">×</span>
+                                                        {s.reps}
+                                                    </span>
+                                                    {s.id && <Pencil className="w-2.5 h-2.5 text-gray-600 opacity-0 group-hover/setbtn:opacity-100 transition-opacity" />}
+                                                </button>
+                                            )}
                                             {s.reached_failure && (
                                                 <span className="text-[10px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">F</span>
                                             )}

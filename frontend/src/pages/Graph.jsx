@@ -3,7 +3,7 @@ import Plot from 'react-plotly.js';
 import { TrendingUp, Search, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { queryKeys, fetchExercisesWithData, fetchTopsets } from '../lib/queries';
+import { queryKeys, fetchExercisesWithData, fetchTopsets, fetchProfile } from '../lib/queries';
 import { exName } from '../lib/i18nUtils';
 
 function Graph() {
@@ -13,6 +13,14 @@ function Graph() {
     const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef(null);
     const { t, i18n } = useTranslation();
+
+    const { data: profile = { weight_unit: 'kg' } } = useQuery({
+        queryKey: queryKeys.profile(),
+        queryFn: fetchProfile,
+        staleTime: 5 * 60 * 1000,
+    });
+    const weightUnit = profile.weight_unit;
+    const convertWeight = (val) => weightUnit === 'lbs' ? val * 2.20462 : val;
 
     // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -168,7 +176,7 @@ function Graph() {
                                 data={[
                                     {
                                         x: plotData.x,
-                                        y: plotType === 'topset' ? plotData.topset : plotType === 'max_weight' ? plotData.max_weight : plotData.total_volume,
+                                        y: (plotType === 'topset' ? plotData.topset : plotType === 'max_weight' ? plotData.max_weight : plotData.total_volume).map(convertWeight),
                                         type: 'scatter',
                                         mode: 'lines+markers',
                                         marker: {
@@ -207,7 +215,11 @@ function Graph() {
                                         zerolinecolor: '#1f2937',
                                         tickfont: { color: '#6b7280' },
                                         title: {
-                                            text: plotType === 'topset' ? t('graph.yAxisTopset') : plotType === 'max_weight' ? t('graph.yAxisMaxWeight') : t('graph.yAxisTotalVolume'),
+                                            text: plotType === 'topset'
+                                                ? `${t('graph.yAxisTopset')} (${weightUnit})`
+                                                : plotType === 'max_weight'
+                                                    ? `${t('graph.yAxisMaxWeight')} (${weightUnit})`
+                                                    : `${t('graph.yAxisTotalVolume')} (${weightUnit})`,
                                             font: { color: '#9ca3af', size: 12 }
                                         },
                                         showgrid: true,

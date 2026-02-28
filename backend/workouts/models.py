@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from .exercise_translations import EXERCISE_TRANSLATIONS_PT
 
 
@@ -126,3 +128,24 @@ class SetEntry(models.Model):
 
     def __str__(self):
         return f"Set {self.order}: {self.weight}x{self.reps}"
+
+
+# ---------------------------------------------------------------------------
+# User profile (weight unit preference)
+# ---------------------------------------------------------------------------
+
+class UserProfile(models.Model):
+    WEIGHT_UNIT_CHOICES = [('kg', 'kg'), ('lbs', 'lbs')]
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='profile')
+    weight_unit = models.CharField(
+        max_length=3, choices=WEIGHT_UNIT_CHOICES, default='kg')
+
+    def __str__(self):
+        return f"{self.user.username} profile"
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.get_or_create(user=instance)

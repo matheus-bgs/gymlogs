@@ -20,6 +20,8 @@ export const queryKeys = {
     topsets: (exerciseId) => ['topsets', String(exerciseId)],
     activePlan: () => ['plan'],
     sessionProgress: (date, planDayId) => ['sessionProgress', date, String(planDayId)],
+    profile: () => ['profile'],
+    history: () => ['history'],
 };
 
 // ─── Fetcher Functions ────────────────────────────────────────────────────────
@@ -64,6 +66,16 @@ export const fetchSessionProgress = async (date, planDayId) => {
     return data.data ?? [];
 };
 
+export const fetchProfile = async () => {
+    const { data } = await api.get('profile/');
+    return data.data ?? { weight_unit: 'kg' };
+};
+
+export const fetchHistory = async () => {
+    const { data } = await api.get('workouts/history/');
+    return data.data ?? [];
+};
+
 // ─── Mutator Functions ────────────────────────────────────────────────────────
 
 export const saveWorkout = async (payload) => {
@@ -74,6 +86,16 @@ export const saveWorkout = async (payload) => {
 export const createExercise = async (name) => {
     const { data } = await api.post('exercises/', { name });
     return data;
+};
+
+export const updateProfile = async (fields) => {
+    const { data } = await api.patch('profile/', fields);
+    return data.data;
+};
+
+export const updateSet = async ({ setId, weight, reps }) => {
+    const { data } = await api.patch(`sets/${setId}/`, { weight, reps });
+    return data.data;
 };
 
 export const createPlan = async ({ name }) => {

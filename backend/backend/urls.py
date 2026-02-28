@@ -24,6 +24,7 @@ from workouts.views import (
     WorkoutPlanView, PlanDetailView,
     PlanDayView, PlanDayDetailView,
     PlanExerciseView, PlanExerciseDetailView, PlanExerciseReorderView,
+    UserProfileView, SetEntryUpdateView, WorkoutHistoryView,
 )
 
 urlpatterns = [
@@ -36,7 +37,12 @@ urlpatterns = [
     path("api/workouts/", WorkoutCreateView.as_view()),
     path("api/workouts/last/", LastWorkoutView.as_view()),
     path("api/workouts/session-progress/", SessionProgressView.as_view()),
+    path("api/workouts/history/", WorkoutHistoryView.as_view()),
     path("api/topsets/", TopsetsView.as_view()),
+    # Profile
+    path("api/profile/", UserProfileView.as_view()),
+    # Set editing
+    path("api/sets/<int:set_id>/", SetEntryUpdateView.as_view()),
     # Plan endpoints
     path("api/plans/", WorkoutPlanView.as_view()),
     path("api/plans/<int:plan_id>/", PlanDetailView.as_view()),

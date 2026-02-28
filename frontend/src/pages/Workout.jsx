@@ -1,11 +1,11 @@
 ﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Save, Calendar, Activity, FileText, X, Search, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Save, Calendar, Activity, FileText, X, Search, ChevronDown, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     queryKeys, fetchExercises, fetchLastWorkout, fetchActivePlan, fetchSessionProgress,
-    saveWorkout, createExercise,
+    fetchProfile, saveWorkout, createExercise,
 } from '../lib/queries';
 import { exName } from '../lib/i18nUtils';
 import WorkoutSummary from './WorkoutSummary';
@@ -33,7 +33,8 @@ function Toast({ message }) {
 
 // â”€â”€ Shared set row card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-function SetCard({ set, index, disabled, onSetChange, onRemove, canRemove, t, planHint }) {
+function SetCard({ set, index, disabled, onSetChange, onSetBlur, onRemove, canRemove, t, planHint, weightUnit, fieldErrors }) {
+    const unit = weightUnit || 'kg';
     return (
         <div className={`group bg-gray-950 rounded-2xl p-5 border border-gray-800 hover:border-gray-700 transition-all flex flex-wrap items-end gap-4 relative ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="absolute -left-3 -top-3 w-8 h-8 bg-gray-800 text-gray-300 rounded-full flex items-center justify-center font-bold text-sm border border-gray-700 shadow-sm">
@@ -43,22 +44,32 @@ function SetCard({ set, index, disabled, onSetChange, onRemove, canRemove, t, pl
                 <div className="w-full text-xs text-green-400/70 -mb-2">{planHint}</div>
             )}
             <div className="flex-1 min-w-[100px]">
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">{t('workout.weight')}</label>
-                <input type="number" step="0.5" required
-                    className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                    {t('workout.weight')} <span className="text-green-400/70">({unit})</span>
+                </label>
+                <input type="text" inputMode="decimal" required
+                    className={`w-full px-4 py-2.5 bg-gray-900 border rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all ${fieldErrors?.weight ? 'border-red-500' : 'border-gray-700'}`}
                     value={set.weight}
-                    onChange={e => onSetChange(index, 'weight', parseFloat(e.target.value))}
+                    onChange={e => onSetChange(index, 'weight', e.target.value)}
+                    onBlur={() => onSetBlur(index, 'weight')}
                     placeholder="0.0"
                 />
+                {fieldErrors?.weight && (
+                    <p className="text-xs text-red-400 mt-1">{t('workout.invalidWeight')}</p>
+                )}
             </div>
             <div className="flex-1 min-w-[100px]">
                 <label className="block text-xs font-medium text-gray-400 mb-1.5">{t('workout.reps')}</label>
-                <input type="number" required
-                    className="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                <input type="text" inputMode="numeric" required
+                    className={`w-full px-4 py-2.5 bg-gray-900 border rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all ${fieldErrors?.reps ? 'border-red-500' : 'border-gray-700'}`}
                     value={set.reps}
-                    onChange={e => onSetChange(index, 'reps', parseInt(e.target.value))}
+                    onChange={e => onSetChange(index, 'reps', e.target.value)}
+                    onBlur={() => onSetBlur(index, 'reps')}
                     placeholder="0"
                 />
+                {fieldErrors?.reps && (
+                    <p className="text-xs text-red-400 mt-1">{t('workout.invalidReps')}</p>
+                )}
             </div>
             <div className="flex-1 min-w-[140px]">
                 <label className="block text-xs font-medium text-gray-400 mb-1.5">{t('workout.intensityMethod')}</label>
@@ -102,7 +113,9 @@ function SetCard({ set, index, disabled, onSetChange, onRemove, canRemove, t, pl
 
 // â”€â”€ Last workout panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-function LastWorkoutPanel({ exerciseId, t }) {
+function LastWorkoutPanel({ exerciseId, t, weightUnit }) {
+    const unit = weightUnit || 'kg';
+    const displayW = (kg) => unit === 'lbs' ? parseFloat((kg * 2.20462).toFixed(2)) : kg;
     const { data: lastWorkout = null, isLoading } = useQuery({
         queryKey: queryKeys.lastWorkout(exerciseId),
         queryFn: () => fetchLastWorkout(exerciseId),
@@ -136,7 +149,7 @@ function LastWorkoutPanel({ exerciseId, t }) {
                             <div key={idx} className="bg-gray-900 rounded-xl p-3 border border-gray-800 flex items-center justify-between">
                                 <span className="text-xs font-bold text-gray-500 bg-gray-800 w-6 h-6 rounded-full flex items-center justify-center">{s.order}</span>
                                 <div className="flex flex-col items-end">
-                                    <span className="text-sm font-bold text-white">{s.weight} <span className="text-xs text-gray-400 font-normal">kg</span> &times; {s.reps}</span>
+                                    <span className="text-sm font-bold text-white">{displayW(s.weight)} <span className="text-xs text-gray-400 font-normal">{unit}</span> &times; {s.reps}</span>
                                     <div className="flex gap-1 mt-1">
                                         {s.intensity_method !== 'none' && (
                                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">{s.intensity_method}</span>
@@ -189,12 +202,31 @@ function Workout() {
     const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef(null);
 
+    // ── Exercise swap + validation state ─────────────────────────────────────
+    const [overrideExercise, setOverrideExercise] = useState(null); // exercise object
+    const [isSwapOpen, setIsSwapOpen] = useState(false);
+    const [swapSearchQuery, setSwapSearchQuery] = useState('');
+    const [setFieldErrors, setSetFieldErrors] = useState({}); // { [idx]: { weight, reps } }
+
     // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const { data: exercises = [] } = useQuery({
         queryKey: queryKeys.exercises(),
         queryFn: fetchExercises,
         staleTime: 10 * 60 * 1000,
     });
+
+    const { data: profile = { weight_unit: 'kg' } } = useQuery({
+        queryKey: queryKeys.profile(),
+        queryFn: fetchProfile,
+        staleTime: 5 * 60 * 1000,
+    });
+    const weightUnit = profile.weight_unit;
+
+    // Convert value from display unit to kg for API storage
+    const inputWeightToKg = (val) => {
+        const num = parseFloat(String(val).replace(',', '.'));
+        return weightUnit === 'lbs' ? parseFloat((num / 2.20462).toFixed(4)) : num;
+    };
 
     const { data: activePlan } = useQuery({
         queryKey: queryKeys.activePlan(),
@@ -215,12 +247,27 @@ function Workout() {
         staleTime: 0,
     });
 
-    // Auto-set first plan day
+    // Auto-set next plan day using last logged day for plan-order awareness
     useEffect(() => {
         if (hasPlan && !planDayId) {
-            setPlanDayId(activePlan.days[0].id);
+            const days = activePlan.days;
+            const lastDayId = activePlan.last_day_id;
+            if (lastDayId) {
+                const lastDayIdx = days.findIndex(d => d.id === lastDayId);
+                const nextIdx = lastDayIdx !== -1 ? (lastDayIdx + 1) % days.length : 0;
+                setPlanDayId(days[nextIdx].id);
+            } else {
+                setPlanDayId(days[0].id);
+            }
         }
     }, [hasPlan, activePlan, planDayId]);
+
+    // Clear exercise override when advancing to next exercise
+    useEffect(() => {
+        setOverrideExercise(null);
+        setIsSwapOpen(false);
+        setSwapSearchQuery('');
+    }, [currentExIndex]);
 
     // Resume from session progress when day/date changes
     useEffect(() => {
@@ -268,6 +315,24 @@ function Workout() {
     const handleSetChange = (idx, field, value) =>
         setSets(prev => { const n = [...prev]; n[idx] = { ...n[idx], [field]: value }; return n; });
 
+    const handleSetBlur = (idx, field) => {
+        const rawVal = sets[idx]?.[field];
+        if (field === 'weight') {
+            const normalized = String(rawVal ?? '').replace(',', '.');
+            const num = parseFloat(normalized);
+            const invalid = isNaN(num) || num < 0;
+            setSetFieldErrors(prev => ({ ...prev, [idx]: { ...prev[idx], weight: invalid } }));
+            if (!invalid) setSets(prev => { const n = [...prev]; n[idx] = { ...n[idx], weight: normalized }; return n; });
+        } else if (field === 'reps') {
+            const num = parseInt(String(rawVal ?? ''), 10);
+            const invalid = isNaN(num) || num <= 0;
+            setSetFieldErrors(prev => ({ ...prev, [idx]: { ...prev[idx], reps: invalid } }));
+            if (!invalid) setSets(prev => { const n = [...prev]; n[idx] = { ...n[idx], reps: String(num) }; return n; });
+        }
+    };
+
+    const hasValidationErrors = Object.values(setFieldErrors).some(e => e && (e.weight || e.reps));
+
     // â”€â”€ Mutations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const createExerciseMutation = useMutation({
         mutationFn: createExercise,
@@ -282,13 +347,15 @@ function Workout() {
 
     const saveWorkoutMutation = useMutation({
         mutationFn: saveWorkout,
-        onSuccess: () => {
+        onSuccess: (response) => {
             if (inPlanMode && planExEntry) {
-                const exerciseName = exName(planExEntry.exercise, i18n.language);
-                const loggedSets = [...sets];
+                const activeExercise = overrideExercise ?? planExEntry.exercise;
+                const exerciseName = exName(activeExercise, i18n.language);
+                // Prefer response.sets (has DB ids) for post-session editing; fall back to local state
+                const loggedSets = response?.sets?.length ? response.sets : [...sets];
 
-                queryClient.invalidateQueries({ queryKey: queryKeys.lastWorkout(planExEntry.exercise.id) });
-                queryClient.invalidateQueries({ queryKey: queryKeys.topsets(planExEntry.exercise.id) });
+                queryClient.invalidateQueries({ queryKey: queryKeys.lastWorkout(activeExercise.id) });
+                queryClient.invalidateQueries({ queryKey: queryKeys.topsets(activeExercise.id) });
                 queryClient.invalidateQueries({ queryKey: queryKeys.sessionProgress(date, planDayId) });
                 queryClient.invalidateQueries({ queryKey: queryKeys.exercisesWithData() });
 
@@ -316,18 +383,26 @@ function Workout() {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (sets.length === 0) { alert(t('workout.needOneSet')); return; }
+        if (hasValidationErrors) { alert(t('workout.invalidWeight')); return; }
+        // Prepare sets: normalize and convert to kg for storage
+        const preparedSets = sets.map(s => ({
+            ...s,
+            weight: inputWeightToKg(s.weight),
+            reps: parseInt(String(s.reps), 10),
+        }));
         if (inPlanMode && planExEntry) {
+            const activeExerciseId = overrideExercise ? overrideExercise.id : planExEntry.exercise.id;
             saveWorkoutMutation.mutate({
                 date,
-                exercise: planExEntry.exercise.id,
+                exercise: activeExerciseId,
                 notes,
-                sets,
+                sets: preparedSets,
                 plan_day: planDayId,
-                plan_exercise: planExEntry.id,
+                plan_exercise: overrideExercise ? null : planExEntry.id,
             });
         } else {
             if (!exercise) { alert(t('workout.needExercise')); return; }
-            saveWorkoutMutation.mutate({ date, exercise, notes, sets });
+            saveWorkoutMutation.mutate({ date, exercise, notes, sets: preparedSets });
         }
     };
 
@@ -338,6 +413,10 @@ function Workout() {
         setNotes('');
         setSets([emptySet(1)]);
         setDate(today());
+        setOverrideExercise(null);
+        setIsSwapOpen(false);
+        setSwapSearchQuery('');
+        setSetFieldErrors({});
         queryClient.invalidateQueries({ queryKey: queryKeys.sessionProgress(date, planDayId) });
     };
 
@@ -358,7 +437,7 @@ function Workout() {
         : null;
 
     const currentExerciseId = inPlanMode
-        ? (planExEntry ? String(planExEntry.exercise.id) : '')
+        ? (overrideExercise ? String(overrideExercise.id) : (planExEntry ? String(planExEntry.exercise.id) : ''))
         : exercise;
 
     // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -448,31 +527,56 @@ function Workout() {
                                         </div>
                                         {planExEntry && (
                                             <div className="bg-green-600/10 border border-green-500/20 rounded-2xl px-5 py-4">
-                                                <p className="text-xs text-green-400/70 mb-1 font-medium uppercase tracking-wider">
-                                                    {i18n.language === 'pt' ? 'ExercÃ­cio atual' : 'Current exercise'}
-                                                </p>
-                                                <p className="text-lg font-bold text-white">
-                                                    {exName(planExEntry.exercise, i18n.language)}
-                                                </p>
-                                                <p className="text-sm text-gray-400 mt-0.5">{planHintText}</p>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <p className="text-xs text-green-400/70 font-medium uppercase tracking-wider">
+                                                        {t('workout.currentExercise')}
+                                                    </p>
+                                                    <button type="button"
+                                                        onClick={() => { setIsSwapOpen(o => !o); setSwapSearchQuery(''); }}
+                                                        className="text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-800"
+                                                        title="Switch exercise"
+                                                    >
+                                                        <RefreshCw className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                                {isSwapOpen ? (
+                                                    <div className="mt-2 space-y-1">
+                                                        <div className="relative">
+                                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                            <input type="text" autoFocus
+                                                                className="w-full pl-9 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-xl text-white text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                                                                placeholder={t('workout.searchExercises')}
+                                                                value={swapSearchQuery}
+                                                                onChange={e => setSwapSearchQuery(e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div className="max-h-40 overflow-y-auto bg-gray-900 border border-gray-700 rounded-xl shadow-xl">
+                                                            {exercises
+                                                                .filter(ex => { const q = swapSearchQuery.toLowerCase(); return ex.name.toLowerCase().includes(q) || (ex.name_pt && ex.name_pt.toLowerCase().includes(q)); })
+                                                                .sort((a, b) => exName(a, i18n.language).localeCompare(exName(b, i18n.language)))
+                                                                .map(ex => (
+                                                                    <div key={ex.id}
+                                                                        className={`px-4 py-2.5 cursor-pointer hover:bg-gray-800 text-sm transition-colors ${overrideExercise?.id === ex.id ? 'text-green-400 bg-green-600/20' : 'text-gray-300'}`}
+                                                                        onClick={() => { setOverrideExercise(ex); setIsSwapOpen(false); }}
+                                                                    >
+                                                                        {exName(ex, i18n.language)}
+                                                                    </div>
+                                                                ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-lg font-bold text-white">
+                                                            {overrideExercise ? exName(overrideExercise, i18n.language) : exName(planExEntry.exercise, i18n.language)}
+                                                            {overrideExercise && (
+                                                                <span className="ml-2 text-xs text-green-400/70 font-normal">(changed)</span>
+                                                            )}
+                                                        </p>
+                                                        <p className="text-sm text-gray-400 mt-0.5">{planHintText}</p>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
-                                    </div>
-                                )}
-
-                                {/* Notes */}
-                                {planDay && (
-                                    <div className="space-y-2">
-                                        <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
-                                            <FileText className="w-4 h-4 text-gray-500" /> {t('workout.notes')}
-                                        </label>
-                                        <textarea
-                                            className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all resize-none"
-                                            rows="2"
-                                            value={notes}
-                                            onChange={e => setNotes(e.target.value)}
-                                            placeholder={t('workout.notesPlaceholder')}
-                                        />
                                     </div>
                                 )}
                             </div>
@@ -580,25 +684,11 @@ function Workout() {
                                         </div>
                                     )}
                                 </div>
-
-                                <div className="sm:col-span-2 space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
-                                        <FileText className="w-4 h-4 text-gray-500" /> {t('workout.notes')}
-                                    </label>
-                                    <textarea
-                                        className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                        rows="2"
-                                        value={notes}
-                                        onChange={e => setNotes(e.target.value)}
-                                        placeholder={t('workout.notesPlaceholder')}
-                                        disabled={!exercise}
-                                    />
-                                </div>
                             </div>
                         )}
 
                         {/* Last workout reference */}
-                        <LastWorkoutPanel exerciseId={currentExerciseId} t={t} />
+                        <LastWorkoutPanel exerciseId={currentExerciseId} t={t} weightUnit={weightUnit} />
 
                         {/* Sets section â€” shown in plan mode only when a day+exercise is active */}
                         {(currentExerciseId || (!inPlanMode && !hasPlan) || freeformMode) && (
@@ -617,28 +707,47 @@ function Workout() {
                                             index={index}
                                             disabled={!inPlanMode && !exercise}
                                             onSetChange={handleSetChange}
+                                            onSetBlur={handleSetBlur}
                                             onRemove={handleRemoveSet}
                                             canRemove={sets.length > 1}
                                             t={t}
                                             planHint={index === 0 && planHintText ? planHintText : null}
+                                            weightUnit={weightUnit}
+                                            fieldErrors={setFieldErrors[index]}
                                         />
                                     ))}
                                 </div>
-                                <button type="button" onClick={handleAddSet}
-                                    className="mt-6 w-full py-4 border-2 border-dashed border-gray-700 rounded-2xl text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800/50 transition-all flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled={!inPlanMode && !exercise}
-                                >
-                                    <Plus className="w-5 h-5" /> {t('workout.addAnotherSet')}
-                                </button>
                             </div>
                         )}
 
-                        {/* Submit */}
-                        <div className="pt-8 border-t border-gray-800">
+                        {/* Notes (always at bottom, before buttons) */}
+                        {(inPlanMode ? !!planDay : !!exercise || !hasPlan) && (
+                            <div className="pt-6 border-t border-gray-800 space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                                    <FileText className="w-4 h-4 text-gray-500" /> {t('workout.notes')}
+                                </label>
+                                <textarea
+                                    className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all resize-none"
+                                    rows="2"
+                                    value={notes}
+                                    onChange={e => setNotes(e.target.value)}
+                                    placeholder={t('workout.notesPlaceholder')}
+                                />
+                            </div>
+                        )}
+
+                        {/* Add Set + Submit row */}
+                        <div className="pt-6 border-t border-gray-800 flex gap-3">
+                            <button type="button" onClick={handleAddSet}
+                                disabled={!inPlanMode && !exercise}
+                                className="flex-1 py-4 border-2 border-dashed border-gray-700 rounded-2xl text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800/50 transition-all flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Plus className="w-5 h-5" /> {t('workout.addAnotherSet')}
+                            </button>
                             <button
                                 type="submit"
-                                disabled={saveWorkoutMutation.isPending || (!inPlanMode && !exercise) || (inPlanMode && !planExEntry)}
-                                className="w-full py-4 px-4 rounded-2xl shadow-lg shadow-green-600/20 text-base font-bold text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={saveWorkoutMutation.isPending || (!inPlanMode && !exercise) || (inPlanMode && !planExEntry) || hasValidationErrors}
+                                className="flex-1 py-4 px-4 rounded-2xl shadow-lg shadow-green-600/20 text-base font-bold text-white bg-green-600 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {saveWorkoutMutation.isPending ? t('workout.saving') : (
                                     <><Save className="w-5 h-5" /> {t('workout.saveWorkout')}</>

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
-    ClipboardList, Plus, Trash2, GripVertical, Check, X, Search, ChevronDown, Pencil,
+    ClipboardList, Plus, Trash2, GripVertical, Check, X, Search, ChevronDown, Pencil, RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,7 +22,7 @@ import { exName } from '../lib/i18nUtils';
 
 // ── Sortable exercise row ─────────────────────────────────────────────────────
 
-function SortableExerciseRow({ pe, onDelete, onUpdate, lang, t }) {
+function SortableExerciseRow({ pe, onDelete, onUpdate, lang, t, exercises }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pe.id });
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -34,10 +34,22 @@ function SortableExerciseRow({ pe, onDelete, onUpdate, lang, t }) {
     const [localSets, setLocalSets] = useState(pe.target_sets);
     const [localMin, setLocalMin] = useState(pe.reps_min);
     const [localMax, setLocalMax] = useState(pe.reps_max);
+    const [isSwapOpen, setIsSwapOpen] = useState(false);
+    const [swapQuery, setSwapQuery] = useState('');
 
     const handleSave = () => {
         onUpdate({ exId: pe.id, target_sets: Number(localSets), reps_min: Number(localMin), reps_max: Number(localMax) });
         setEditing(false);
+    };
+
+    const filteredSwap = (exercises || []).filter(ex =>
+        exName(ex, lang).toLowerCase().includes(swapQuery.toLowerCase())
+    ).slice(0, 8);
+
+    const handleSwap = (newEx) => {
+        onUpdate({ exId: pe.id, exercise_id: newEx.id });
+        setIsSwapOpen(false);
+        setSwapQuery('');
     };
 
     return (
@@ -101,6 +113,11 @@ function SortableExerciseRow({ pe, onDelete, onUpdate, lang, t }) {
                         <span className="text-xs text-gray-500 hidden sm:inline">
                             {t('plan.target', { sets: pe.target_sets, min: pe.reps_min, max: pe.reps_max })}
                         </span>
+                        <button type="button" onClick={() => { setIsSwapOpen(o => !o); setSwapQuery(''); }}
+                            className="p-1.5 rounded-lg text-gray-600 hover:text-blue-400 hover:bg-blue-400/10 transition-colors opacity-0 group-hover:opacity-100"
+                            title={t('plan.swapExercise') || 'Swap exercise'}>
+                            <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
                         <button type="button" onClick={() => setEditing(true)}
                             className="p-1.5 rounded-lg text-gray-600 hover:text-gray-300 hover:bg-gray-800 transition-colors opacity-0 group-hover:opacity-100">
                             <Pencil className="w-3.5 h-3.5" />
@@ -116,6 +133,37 @@ function SortableExerciseRow({ pe, onDelete, onUpdate, lang, t }) {
             <div className="sm:hidden px-4 pb-2 text-xs text-gray-600">
                 {t('plan.target', { sets: pe.target_sets, min: pe.reps_min, max: pe.reps_max })}
             </div>
+            {/* exercise swap dropdown */}
+            {isSwapOpen && (
+                <div className="px-4 pb-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+                        <input
+                            autoFocus
+                            type="text"
+                            className="w-full pl-8 pr-3 py-2 bg-gray-900 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                            placeholder={t('workout.searchExercise') || 'Search exercise…'}
+                            value={swapQuery}
+                            onChange={e => setSwapQuery(e.target.value)}
+                        />
+                    </div>
+                    {filteredSwap.length > 0 && (
+                        <ul className="mt-1 bg-gray-900 border border-gray-700 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                            {filteredSwap.map(ex => (
+                                <li key={ex.id}>
+                                    <button
+                                        type="button"
+                                        className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-800 transition-colors"
+                                        onClick={() => handleSwap(ex)}
+                                    >
+                                        {exName(ex, lang)}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
@@ -536,6 +584,7 @@ function Plan() {
                                             pe={pe}
                                             lang={i18n.language}
                                             t={t}
+                                            exercises={exercises}
                                             onDelete={handleDeleteExercise}
                                             onUpdate={({ exId, ...fields }) => updateExerciseMutation.mutate({ exId, ...fields })}
                                         />

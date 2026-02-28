@@ -3,6 +3,7 @@
         "logWorkout": "Log Workout",
         "progress": "Progress",
         "plan": "My Plan",
+        "history": "History",
         "logout": "Logout"
     },
     "login": {
@@ -57,13 +58,16 @@
         "myoreps": "Myo-reps",
         "dropset": "Drop Set",
         "failure": "Failure",
-        "addAnotherSet": "Add Another Set",
+        "currentExercise": "Current exercise",
+        "addAnotherSet": "Add Set",
         "saving": "Saving...",
         "saveWorkout": "Save Workout",
         "needOneSet": "Please add at least one set.",
         "needExercise": "Please select an exercise.",
         "createExerciseFailed": "Failed to create exercise. It might already exist.",
         "saveWorkoutFailed": "Failed to submit workout",
+        "invalidWeight": "Enter a valid weight (e.g. 9.1 or 9,1)",
+        "invalidReps": "Enter a valid number of reps (positive integer)",
         "selectDay": "Select workout day",
         "logWithoutPlan": "Log without plan",
         "resumingSession": "Resuming session — picking up from where you left off.",
@@ -88,6 +92,7 @@
         "target": "Target: {{sets}} sets of {{min}}–{{max}} reps",
         "deleteDayConfirm": "Delete day \"{{label}}\" and all its exercises?",
         "deleteExerciseConfirm": "Remove this exercise from the plan?",
+        "swapExercise": "Swap exercise",
         "createPlanFailed": "Failed to create plan.",
         "noExercisesInDay": "No exercises added to this day yet.",
         "saving": "Saving...",
@@ -101,7 +106,20 @@
         "totalVolume": "Total Volume",
         "noData": "No data available for this selection.",
         "yAxisTopset": "Topset Volume (Weight × Reps)",
-        "yAxisMaxWeight": "Max Weight (kg)",
-        "yAxisTotalVolume": "Total Volume (kg)"
+        "yAxisMaxWeight": "Max Weight",
+        "yAxisTotalVolume": "Total Volume"
+    },
+    "profile": {
+        "weightUnit": "Weight unit",
+        "kg": "kg",
+        "lbs": "lbs"
+    },
+    "history": {
+        "title": "Workout History",
+        "subtitle": "Browse and edit all your logged sessions.",
+        "noHistory": "No workouts logged yet.",
+        "editSet": "Edit set",
+        "saveSet": "Save",
+        "cancelEdit": "Cancel"
     }
 }

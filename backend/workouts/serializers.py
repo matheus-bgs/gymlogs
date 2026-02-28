@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Exercise, WorkoutSession, WorkoutExercise, SetEntry, IntensityMethod,
-    WorkoutPlan, PlanDay, PlanExercise,
+    WorkoutPlan, PlanDay, PlanExercise, UserProfile,
 )
 
 
@@ -57,12 +57,45 @@ class WorkoutPlanSerializer(serializers.ModelSerializer):
 # Workout logging serializers
 # ---------------------------------------------------------------------------
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['weight_unit']
+
+
 class SetEntryPayloadSerializer(serializers.Serializer):
     order = serializers.IntegerField()
     weight = serializers.FloatField()
     reps = serializers.IntegerField()
     reached_failure = serializers.BooleanField(default=False)
     intensity_method = serializers.CharField(max_length=50, default='none')
+
+    def validate_weight(self, value):
+        if value < 0:
+            raise serializers.ValidationError('Weight must be non-negative.')
+        return value
+
+    def validate_reps(self, value):
+        if value <= 0:
+            raise serializers.ValidationError(
+                'Reps must be a positive integer.')
+        return value
+
+
+class SetEntryUpdateSerializer(serializers.Serializer):
+    weight = serializers.FloatField(required=False)
+    reps = serializers.IntegerField(required=False)
+
+    def validate_weight(self, value):
+        if value < 0:
+            raise serializers.ValidationError('Weight must be non-negative.')
+        return value
+
+    def validate_reps(self, value):
+        if value <= 0:
+            raise serializers.ValidationError(
+                'Reps must be a positive integer.')
+        return value
 
 
 class WorkoutSerializer(serializers.Serializer):

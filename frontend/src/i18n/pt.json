@@ -3,6 +3,7 @@
         "logWorkout": "Registrar Treino",
         "progress": "Progresso",
         "plan": "Meu Plano",
+        "history": "Histórico",
         "logout": "Sair"
     },
     "login": {
@@ -57,13 +58,16 @@
         "myoreps": "Myo-reps",
         "dropset": "Drop Set",
         "failure": "Falha",
-        "addAnotherSet": "Adicionar Outra Série",
+        "currentExercise": "Exercício atual",
+        "addAnotherSet": "Adicionar Série",
         "saving": "Salvando...",
         "saveWorkout": "Salvar Treino",
         "needOneSet": "Por favor, adicione pelo menos uma série.",
         "needExercise": "Por favor, selecione um exercício.",
         "createExerciseFailed": "Falha ao criar exercício. Ele pode já existir.",
         "saveWorkoutFailed": "Falha ao enviar treino",
+        "invalidWeight": "Digite um peso válido (ex: 9.1 ou 9,1)",
+        "invalidReps": "Digite um número válido de repetições (inteiro positivo)",
         "selectDay": "Selecione o dia de treino",
         "logWithoutPlan": "Registrar sem plano",
         "resumingSession": "Continuando sessão — retomando de onde você parou.",
@@ -88,6 +92,7 @@
         "target": "Meta: {{sets}} séries de {{min}}–{{max}} reps",
         "deleteDayConfirm": "Excluir o dia \"{{label}}\" e todos os seus exercícios?",
         "deleteExerciseConfirm": "Remover este exercício do plano?",
+        "swapExercise": "Trocar exercício",
         "createPlanFailed": "Falha ao criar plano.",
         "noExercisesInDay": "Nenhum exercício adicionado a este dia ainda.",
         "saving": "Salvando...",
@@ -101,7 +106,20 @@
         "totalVolume": "Volume Total",
         "noData": "Nenhum dado disponível para esta seleção.",
         "yAxisTopset": "Volume do Topset (Peso × Reps)",
-        "yAxisMaxWeight": "Peso Máximo (kg)",
-        "yAxisTotalVolume": "Volume Total (kg)"
+        "yAxisMaxWeight": "Peso Máximo",
+        "yAxisTotalVolume": "Volume Total"
+    },
+    "profile": {
+        "weightUnit": "Unidade de peso",
+        "kg": "kg",
+        "lbs": "lbs"
+    },
+    "history": {
+        "title": "Histórico de Treinos",
+        "subtitle": "Visualize e edite todas as suas sessões registradas.",
+        "noHistory": "Nenhum treino registrado ainda.",
+        "editSet": "Editar série",
+        "saveSet": "Salvar",
+        "cancelEdit": "Cancelar"
     }
 }

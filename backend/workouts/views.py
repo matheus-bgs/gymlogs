@@ -4,10 +4,11 @@ from django.db.models import Max, Sum, Count, ExpressionWrapper, FloatField, F
 from rest_framework import generics, views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Exercise, WorkoutSession, WorkoutExercise, SetEntry, WorkoutPlan, PlanDay, PlanExercise
+from .models import Exercise, WorkoutSession, WorkoutExercise, SetEntry, WorkoutPlan, PlanDay, PlanExercise, UserProfile
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutPlanSerializer, PlanDaySerializer, PlanExerciseSerializer,
+    UserProfileSerializer, SetEntryUpdateSerializer,
 )
 
 
@@ -60,8 +61,18 @@ class WorkoutCreateView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({'status': 'ok'}, status=status.HTTP_201_CREATED)
+        session = serializer.save()
+        # Return the newly created sets with their IDs so the frontend can support post-session editing
+        latest_we = session.exercises.order_by('-id').first()
+        sets_with_ids = []
+        if latest_we:
+            sets_with_ids = [
+                {'id': s.id, 'order': s.order, 'weight': s.weight, 'reps': s.reps,
+                 'reached_failure': s.reached_failure,
+                 'intensity_method': s.intensity_method.name if s.intensity_method else 'none'}
+                for s in latest_we.sets.order_by('order')
+            ]
+        return Response({'status': 'ok', 'sets': sets_with_ids}, status=status.HTTP_201_CREATED)
 
 
 class LastWorkoutView(views.APIView):
@@ -139,7 +150,13 @@ class WorkoutPlanView(views.APIView):
         ).first()
         if not plan:
             return Response({'data': None})
-        return Response({'data': WorkoutPlanSerializer(plan).data})
+        last_session = WorkoutSession.objects.filter(
+            user=request.user,
+            plan_day__plan=plan,
+        ).order_by('-date').first()
+        plan_data = WorkoutPlanSerializer(plan).data
+        plan_data['last_day_id'] = last_session.plan_day_id if last_session else None
+        return Response({'data': plan_data})
 
     def post(self, request):
         serializer = WorkoutPlanSerializer(
@@ -268,6 +285,12 @@ class PlanExerciseDetailView(views.APIView):
         for field in ['target_sets', 'reps_min', 'reps_max', 'order']:
             if field in request.data:
                 setattr(pe, field, request.data[field])
+        if 'exercise_id' in request.data:
+            try:
+                pe.exercise = Exercise.objects.get(
+                    id=request.data['exercise_id'])
+            except Exercise.DoesNotExist:
+                return Response({'error': 'Exercise not found.'}, status=404)
         pe.save()
         return Response({'data': PlanExerciseSerializer(pe).data})
 
@@ -330,145 +353,99 @@ class SessionProgressView(views.APIView):
         return Response({'data': logged_ids})
 
 
-class RegisterView(views.APIView):
-    permission_classes = [AllowAny]
+# ---------------------------------------------------------------------------
+# Profile
+# ---------------------------------------------------------------------------
 
-    def post(self, request):
-        username = request.data.get('username', '').strip()
-        password = request.data.get('password', '')
-        email = request.data.get('email', '').strip()
+class UserProfileView(views.APIView):
+    """GET or PATCH the current user's profile (weight_unit preference)."""
+    permission_classes = [IsAuthenticated]
 
-        if not username or not password:
-            return Response({'error': 'Username and password are required.'}, status=400)
-
-        if User.objects.filter(username=username).exists():
-            return Response({'error': 'Username is already taken.'}, status=400)
-
-        user = User.objects.create_user(
-            username=username, password=password, email=email)
-        return Response({'message': f'User "{user.username}" created successfully.'}, status=201)
-
-
-class DebugDBView(views.APIView):
-    permission_classes = [AllowAny]
+    def _get_profile(self, user):
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        return profile
 
     def get(self, request):
-        try:
-            users = list(User.objects.values(
-                'username', 'is_active', 'is_superuser'))
-            return Response({'status': 'connected', 'users': users})
-        except Exception as e:
-            import traceback
-            return Response({'status': 'error', 'detail': traceback.format_exc()}, status=500)
+        return Response({'data': UserProfileSerializer(self._get_profile(request.user)).data})
 
-
-class ExerciseListView(generics.ListCreateAPIView):
-    serializer_class = ExerciseSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        if self.request.query_params.get('with_data') == 'true':
-            logged_ids = WorkoutExercise.objects.filter(
-                workout_session__user=self.request.user
-            ).values_list('exercise_id', flat=True).distinct()
-            return Exercise.objects.filter(id__in=logged_ids)
-        return Exercise.objects.all()
-
-
-class WorkoutCreateView(generics.CreateAPIView):
-    serializer_class = WorkoutSerializer
-    permission_classes = [IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+    def patch(self, request):
+        profile = self._get_profile(request.user)
+        serializer = UserProfileSerializer(
+            profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({'status': 'ok'}, status=status.HTTP_201_CREATED)
+        return Response({'data': UserProfileSerializer(profile).data})
 
 
-class LastWorkoutView(views.APIView):
+# ---------------------------------------------------------------------------
+# Set editing
+# ---------------------------------------------------------------------------
+
+class SetEntryUpdateView(views.APIView):
+    """PATCH weight/reps on an individual set owned by the requesting user."""
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, set_id):
+        try:
+            set_entry = SetEntry.objects.select_related(
+                'workout_exercise__workout_session'
+            ).get(id=set_id, workout_exercise__workout_session__user=request.user)
+        except SetEntry.DoesNotExist:
+            return Response({'error': 'Not found.'}, status=404)
+        serializer = SetEntryUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if 'weight' in serializer.validated_data:
+            set_entry.weight = serializer.validated_data['weight']
+        if 'reps' in serializer.validated_data:
+            set_entry.reps = serializer.validated_data['reps']
+        set_entry.save()
+        return Response({'data': {'id': set_entry.id, 'weight': set_entry.weight, 'reps': set_entry.reps}})
+
+
+# ---------------------------------------------------------------------------
+# Workout history
+# ---------------------------------------------------------------------------
+
+class WorkoutHistoryView(views.APIView):
+    """GET all workout sessions for the current user with nested exercises+sets."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        exercise_id = request.query_params.get('exercise_id')
-        if not exercise_id:
-            return Response({"error": "exercise_id is required"}, status=400)
+        sessions = WorkoutSession.objects.filter(
+            user=request.user
+        ).prefetch_related(
+            'exercises__exercise',
+            'exercises__sets__intensity_method',
+            'plan_day',
+        ).order_by('-date')
 
-        # Find the most recent WorkoutExercise for this user and exercise
-        last_workout_exercise = WorkoutExercise.objects.filter(
-            workout_session__user=request.user,
-            exercise_id=exercise_id
-        ).order_by('-workout_session__date').first()
-
-        if not last_workout_exercise:
-            return Response({"data": None})
-
-        # Get the sets for this workout exercise
-        sets = SetEntry.objects.filter(
-            workout_exercise=last_workout_exercise
-        ).select_related('intensity_method').order_by('order')
-
-        sets_data = []
-        for s in sets:
-            sets_data.append({
-                'order': s.order,
-                'weight': s.weight,
-                'reps': s.reps,
-                'reached_failure': s.reached_failure,
-                'intensity_method': s.intensity_method.name if s.intensity_method else 'none'
+        data = []
+        for s in sessions:
+            exercises = []
+            for we in s.exercises.all():
+                sets = [{
+                    'id': se.id,
+                    'order': se.order,
+                    'weight': se.weight,
+                    'reps': se.reps,
+                    'reached_failure': se.reached_failure,
+                    'intensity_method': se.intensity_method.name if se.intensity_method else 'none',
+                } for se in we.sets.order_by('order')]
+                exercises.append({
+                    'id': we.id,
+                    'exercise': {
+                        'id': we.exercise.id,
+                        'name': we.exercise.name,
+                        'name_pt': we.exercise.name_pt,
+                    },
+                    'notes': we.notes,
+                    'sets': sets,
+                })
+            data.append({
+                'id': s.id,
+                'date': str(s.date),
+                'notes': s.notes,
+                'plan_day_label': s.plan_day.label if s.plan_day else None,
+                'exercises': exercises,
             })
-
-        data = {
-            'date': last_workout_exercise.workout_session.date,
-            'notes': last_workout_exercise.notes,
-            'sets': sets_data
-        }
-
-        return Response({"data": data})
-
-
-class TopsetsView(views.APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        exercise_id = request.query_params.get('exercise_id')
-
-        qs = SetEntry.objects.filter(
-            workout_exercise__workout_session__user=request.user
-        )
-        if exercise_id:
-            qs = qs.filter(workout_exercise__exercise_id=exercise_id)
-
-        # Single SQL query: group by date, compute topset volume, max weight,
-        # and whether any set on that date used an intensity method.
-        rows = (
-            qs
-            .annotate(date=F('workout_exercise__workout_session__date'))
-            .values('date')
-            .annotate(
-                topset=Max(
-                    ExpressionWrapper(F('weight') * F('reps'),
-                                      output_field=FloatField())
-                ),
-                max_weight=Max('weight'),
-                total_volume=Sum(
-                    ExpressionWrapper(F('weight') * F('reps'),
-                                      output_field=FloatField())
-                ),
-                intensity_count=Count('intensity_method'),
-            )
-            .order_by('date')
-        )
-
-        result = [
-            {
-                'date': str(r['date']),
-                'topset': r['topset'],
-                'max_weight': r['max_weight'],
-                'total_volume': r['total_volume'],
-                'has_intensity': r['intensity_count'] > 0,
-            }
-            for r in rows
-        ]
-
-        return Response({'data': result})
+        return Response({'data': data})
