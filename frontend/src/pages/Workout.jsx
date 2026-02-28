@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Save, Calendar, Activity, FileText, X, Search, ChevronDown, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Save, Calendar, Activity, FileText, X, Search, ChevronDown, CheckCircle2, RefreshCw, Play, Square, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -20,6 +20,12 @@ const buildSets = (count) => Array.from({ length: count }, (_, i) => emptySet(i 
 
 // â”€â”€ Toast component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+const formatMmSs = (totalSecs) => {
+    const m = Math.floor(totalSecs / 60);
+    const s = totalSecs % 60;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+};
+
 function Toast({ message }) {
     if (!message) return null;
     return (
@@ -35,8 +41,9 @@ function Toast({ message }) {
 
 function SetCard({ set, index, disabled, onSetChange, onSetBlur, onRemove, canRemove, t, planHint, weightUnit, fieldErrors }) {
     const unit = weightUnit || 'kg';
+    const cardCls = 'group bg-gray-950 rounded-2xl p-5 border border-gray-800 hover:border-gray-700 transition-all flex flex-wrap items-end gap-4 relative' + (disabled ? ' opacity-50 pointer-events-none' : '');
     return (
-        <div className={`group bg-gray-950 rounded-2xl p-5 border border-gray-800 hover:border-gray-700 transition-all flex flex-wrap items-end gap-4 relative ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={cardCls}>
             <div className="absolute -left-3 -top-3 w-8 h-8 bg-gray-800 text-gray-300 rounded-full flex items-center justify-center font-bold text-sm border border-gray-700 shadow-sm">
                 {set.order}
             </div>
@@ -48,7 +55,7 @@ function SetCard({ set, index, disabled, onSetChange, onSetBlur, onRemove, canRe
                     {t('workout.weight')} <span className="text-green-400/70">({unit})</span>
                 </label>
                 <input type="text" inputMode="decimal" required
-                    className={`w-full px-4 py-2.5 bg-gray-900 border rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all ${fieldErrors?.weight ? 'border-red-500' : 'border-gray-700'}`}
+                    className={'w-full px-4 py-2.5 bg-gray-900 border rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all ' + (fieldErrors?.weight ? 'border-red-500' : 'border-gray-700')}
                     value={set.weight}
                     onChange={e => onSetChange(index, 'weight', e.target.value)}
                     onBlur={() => onSetBlur(index, 'weight')}
@@ -61,7 +68,7 @@ function SetCard({ set, index, disabled, onSetChange, onSetBlur, onRemove, canRe
             <div className="flex-1 min-w-[100px]">
                 <label className="block text-xs font-medium text-gray-400 mb-1.5">{t('workout.reps')}</label>
                 <input type="text" inputMode="numeric" required
-                    className={`w-full px-4 py-2.5 bg-gray-900 border rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all ${fieldErrors?.reps ? 'border-red-500' : 'border-gray-700'}`}
+                    className={'w-full px-4 py-2.5 bg-gray-900 border rounded-xl text-white focus:ring-2 focus:ring-green-500 outline-none transition-all ' + (fieldErrors?.reps ? 'border-red-500' : 'border-gray-700')}
                     value={set.reps}
                     onChange={e => onSetChange(index, 'reps', e.target.value)}
                     onBlur={() => onSetBlur(index, 'reps')}
@@ -91,12 +98,12 @@ function SetCard({ set, index, disabled, onSetChange, onSetBlur, onRemove, canRe
                             onChange={e => onSetChange(index, 'reached_failure', e.target.checked)}
                         />
                         <div className="w-6 h-6 bg-gray-900 border-2 border-gray-700 rounded-md peer-checked:bg-red-500 peer-checked:border-red-500 transition-all flex items-center justify-center">
-                            <svg className={`w-4 h-4 text-white ${set.reached_failure ? 'opacity-100' : 'opacity-0'} transition-opacity`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                            <svg className={'w-4 h-4 text-white transition-opacity ' + (set.reached_failure ? 'opacity-100' : 'opacity-0')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
                     </div>
-                    <span className={`text-sm font-medium transition-colors ${set.reached_failure ? 'text-red-400' : 'text-gray-400 group-hover/check:text-gray-300'}`}>
+                    <span className={'text-sm font-medium transition-colors ' + (set.reached_failure ? 'text-red-400' : 'text-gray-400 group-hover/check:text-gray-300')}>
                         {t('workout.failure')}
                     </span>
                 </label>
@@ -207,6 +214,19 @@ function Workout() {
     const [isSwapOpen, setIsSwapOpen] = useState(false);
     const [swapSearchQuery, setSwapSearchQuery] = useState('');
     const [setFieldErrors, setSetFieldErrors] = useState({}); // { [idx]: { weight, reps } }
+    // Stopwatch state (restored from localStorage for refresh recovery)
+    const [timerRunning, setTimerRunning] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('gym_timer'))?.running ?? false; } catch { return false; }
+    });
+    const [sessionStartTs, setSessionStartTs] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('gym_timer'))?.sessionStartTs ?? null; } catch { return null; }
+    });
+    const [exerciseStartTs, setExerciseStartTs] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('gym_timer'))?.exerciseStartTs ?? null; } catch { return null; }
+    });
+    const [now, setNow] = useState(Date.now());
+    const [sessionDurationFinal, setSessionDurationFinal] = useState(null);
+    const pendingDurationRef = useRef(null);
 
     // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const { data: exercises = [] } = useQuery({
@@ -301,6 +321,20 @@ function Workout() {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
+    // Persist timer state to localStorage whenever it changes
+    useEffect(() => {
+        if (timerRunning && sessionStartTs && exerciseStartTs) {
+            localStorage.setItem('gym_timer', JSON.stringify({ running: true, sessionStartTs, exerciseStartTs }));
+        }
+    }, [timerRunning, sessionStartTs, exerciseStartTs]);
+
+    // Tick every second while running
+    useEffect(() => {
+        if (!timerRunning) return;
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, [timerRunning]);
+
     // â”€â”€ Toast helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const showToast = useCallback((message) => {
         setToast(message);
@@ -309,6 +343,26 @@ function Workout() {
     }, []);
 
     // â”€â”€ Set helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Timer helpers
+    const handleStartTimer = () => {
+        const ts = Date.now();
+        setTimerRunning(true);
+        setSessionStartTs(ts);
+        setExerciseStartTs(ts);
+        setNow(ts);
+    };
+
+    const handleStopTimer = () => {
+        setTimerRunning(false);
+        setSessionStartTs(null);
+        setExerciseStartTs(null);
+        localStorage.removeItem('gym_timer');
+    };
+
+    // Derived tick values (seconds)
+    const exerciseSecs = (timerRunning && exerciseStartTs) ? Math.floor((now - exerciseStartTs) / 1000) : 0;
+    const sessionSecs  = (timerRunning && sessionStartTs)  ? Math.floor((now - sessionStartTs)  / 1000) : 0;
+
     const handleAddSet = () => setSets(prev => [...prev, emptySet(prev.length + 1)]);
     const handleRemoveSet = (idx) =>
         setSets(prev => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, order: i + 1 })));
@@ -353,20 +407,33 @@ function Workout() {
                 const exerciseName = exName(activeExercise, i18n.language);
                 // Prefer response.sets (has DB ids) for post-session editing; fall back to local state
                 const loggedSets = response?.sets?.length ? response.sets : [...sets];
+                const { exerciseDur } = pendingDurationRef.current ?? {};
 
                 queryClient.invalidateQueries({ queryKey: queryKeys.lastWorkout(activeExercise.id) });
                 queryClient.invalidateQueries({ queryKey: queryKeys.topsets(activeExercise.id) });
                 queryClient.invalidateQueries({ queryKey: queryKeys.sessionProgress(date, planDayId) });
                 queryClient.invalidateQueries({ queryKey: queryKeys.exercisesWithData() });
 
-                setSessionLog(prev => [...prev, { exerciseName, sets: loggedSets }]);
+                setSessionLog(prev => [...prev, { exerciseName, sets: loggedSets, duration: exerciseDur }]);
                 showToast(t('workout.exerciseLogged', { name: exerciseName }));
                 setNotes('');
 
                 const nextIdx = currentExIndex + 1;
                 if (nextIdx >= planDay.exercises.length) {
+                    // Auto-stop timer and capture final session duration
+                    if (timerRunning && sessionStartTs) {
+                        const { snapNow } = pendingDurationRef.current ?? { snapNow: Date.now() };
+                        setSessionDurationFinal(Math.floor((snapNow - sessionStartTs) / 1000));
+                    }
+                    handleStopTimer();
                     setSessionComplete(true);
                 } else {
+                    // Advance to next exercise — reset exercise lap timestamp
+                    if (timerRunning) {
+                        const lapTs = pendingDurationRef.current?.snapNow ?? Date.now();
+                        setExerciseStartTs(lapTs);
+                        setNow(lapTs);
+                    }
                     setCurrentExIndex(nextIdx);
                     pageTopRef.current?.scrollIntoView({ behavior: 'smooth' });
                 }
@@ -392,6 +459,11 @@ function Workout() {
         }));
         if (inPlanMode && planExEntry) {
             const activeExerciseId = overrideExercise ? overrideExercise.id : planExEntry.exercise.id;
+            // Capture durations at click time so server round-trip doesn't inflate them
+            const snapNow = Date.now();
+            const snapExDur = (timerRunning && exerciseStartTs) ? Math.floor((snapNow - exerciseStartTs) / 1000) : null;
+            const snapSesDur = (timerRunning && sessionStartTs) ? Math.floor((snapNow - sessionStartTs) / 1000) : null;
+            pendingDurationRef.current = { exerciseDur: snapExDur, sessionDur: snapSesDur, snapNow };
             saveWorkoutMutation.mutate({
                 date,
                 exercise: activeExerciseId,
@@ -399,6 +471,8 @@ function Workout() {
                 sets: preparedSets,
                 plan_day: planDayId,
                 plan_exercise: overrideExercise ? null : planExEntry.id,
+                exercise_duration_seconds: snapExDur,
+                session_duration_seconds: snapSesDur,
             });
         } else {
             if (!exercise) { alert(t('workout.needExercise')); return; }
@@ -417,6 +491,8 @@ function Workout() {
         setIsSwapOpen(false);
         setSwapSearchQuery('');
         setSetFieldErrors({});
+        setSessionDurationFinal(null);
+        handleStopTimer();
         queryClient.invalidateQueries({ queryKey: queryKeys.sessionProgress(date, planDayId) });
     };
 
@@ -427,6 +503,7 @@ function Workout() {
                 date={date}
                 dayLabel={planDay?.label}
                 sessionLog={sessionLog}
+                sessionDuration={sessionDurationFinal}
                 onReset={handleReset}
             />
         );
@@ -500,10 +577,7 @@ function Workout() {
                                                             setSets([emptySet(1)]);
                                                         }
                                                     }}
-                                                    className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all
-                                                        ${planDayId === day.id
-                                                            ? 'bg-green-600 text-white shadow-lg shadow-green-600/20'
-                                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                                                    className={'px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ' + (planDayId === day.id ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white')}
                                                 >
                                                     {day.label}
                                                 </button>
@@ -511,6 +585,45 @@ function Workout() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Stopwatch */}
+                                {planDay && (
+                                    <div className="flex items-center gap-4 px-4 py-3 bg-gray-950 rounded-2xl border border-gray-800">
+                                        {timerRunning ? (
+                                            <>
+                                                <span className="flex items-center gap-1.5 text-xs text-red-400 font-semibold">
+                                                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                                    REC
+                                                </span>
+                                                <div className="flex flex-col items-center flex-1">
+                                                    <span className="text-2xl font-mono font-bold text-white tracking-widest">
+                                                        {formatMmSs(exerciseSecs)}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">exercise</span>
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-sm font-mono text-gray-400">{formatMmSs(sessionSecs)}</span>
+                                                    <span className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">session</span>
+                                                </div>
+                                                <button type="button" onClick={handleStopTimer}
+                                                    className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                                                    title="Stop timer">
+                                                    <Square className="w-4 h-4 fill-current" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Timer className="w-4 h-4 text-gray-600" />
+                                                <span className="flex-1 text-sm text-gray-500">Start stopwatch when ready</span>
+                                                <button type="button" onClick={handleStartTimer}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600/20 text-green-400 hover:bg-green-600/30 font-medium text-sm transition-colors"
+                                                    title="Start timer">
+                                                    <Play className="w-4 h-4 fill-current" /> Start
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Progress + current exercise banner */}
                                 {planDay && planDay.exercises.length > 0 && (
@@ -522,7 +635,7 @@ function Workout() {
                                         <div className="w-full bg-gray-800 rounded-full h-1.5">
                                             <div
                                                 className="bg-green-500 h-1.5 rounded-full transition-all duration-500"
-                                                style={{ width: `${(currentExIndex / planDay.exercises.length) * 100}%` }}
+                                                style={{ width: ((currentExIndex / planDay.exercises.length) * 100) + '%' }}
                                             />
                                         </div>
                                         {planExEntry && (
@@ -556,7 +669,7 @@ function Workout() {
                                                                 .sort((a, b) => exName(a, i18n.language).localeCompare(exName(b, i18n.language)))
                                                                 .map(ex => (
                                                                     <div key={ex.id}
-                                                                        className={`px-4 py-2.5 cursor-pointer hover:bg-gray-800 text-sm transition-colors ${overrideExercise?.id === ex.id ? 'text-green-400 bg-green-600/20' : 'text-gray-300'}`}
+                                                                        className={'px-4 py-2.5 cursor-pointer hover:bg-gray-800 text-sm transition-colors ' + (overrideExercise?.id === ex.id ? 'text-green-400 bg-green-600/20' : 'text-gray-300')}
                                                                         onClick={() => { setOverrideExercise(ex); setIsSwapOpen(false); }}
                                                                     >
                                                                         {exName(ex, i18n.language)}
@@ -639,7 +752,7 @@ function Workout() {
                                                         ? exName(exercises.find(e => e.id === parseInt(exercise)), i18n.language)
                                                         : t('workout.selectExercise')}
                                                 </span>
-                                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                                <ChevronDown className={'w-4 h-4 text-gray-500 transition-transform ' + (isDropdownOpen ? 'rotate-180' : '')} />
                                             </div>
                                             {isDropdownOpen && (
                                                 <div className="absolute z-10 w-full mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
@@ -664,7 +777,7 @@ function Workout() {
                                                             .sort((a, b) => exName(a, i18n.language).localeCompare(exName(b, i18n.language)))
                                                             .map(ex => (
                                                                 <div key={ex.id}
-                                                                    className={`px-4 py-3 cursor-pointer hover:bg-gray-800 transition-colors text-sm ${exercise === ex.id.toString() ? 'bg-green-600/20 text-green-400' : 'text-gray-300'}`}
+                                                                    className={'px-4 py-3 cursor-pointer hover:bg-gray-800 transition-colors text-sm ' + (exercise === ex.id.toString() ? 'bg-green-600/20 text-green-400' : 'text-gray-300')}
                                                                     onClick={() => { setExercise(ex.id.toString()); setIsDropdownOpen(false); setSearchQuery(''); }}
                                                                 >
                                                                     {exName(ex, i18n.language)}
@@ -762,3 +875,6 @@ function Workout() {
 }
 
 export default Workout;
+
+
+

@@ -72,6 +72,7 @@ class WorkoutSession(models.Model):
     notes = models.TextField(blank=True, null=True)
     plan_day = models.ForeignKey(
         PlanDay, on_delete=models.SET_NULL, null=True, blank=True, related_name='sessions')
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -92,6 +93,7 @@ class WorkoutExercise(models.Model):
         PlanExercise, on_delete=models.SET_NULL, null=True, blank=True, related_name='logged_exercises')
     order = models.PositiveIntegerField()
     notes = models.TextField(blank=True, null=True)
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

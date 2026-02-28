@@ -1,0 +1,7 @@
+{
+    "editor.formatOnSave": false,
+    "[javascriptreact]": {
+        "editor.formatOnSave": false
+    },
+    "prettier.ignorePath": "frontend/.prettierignore"
+}

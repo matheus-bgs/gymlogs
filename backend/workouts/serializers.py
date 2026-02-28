@@ -110,6 +110,10 @@ class WorkoutSerializer(serializers.Serializer):
     plan_exercise = serializers.PrimaryKeyRelatedField(
         queryset=PlanExercise.objects.all(), required=False, allow_null=True
     )
+    exercise_duration_seconds = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0)
+    session_duration_seconds = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0)
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -119,6 +123,10 @@ class WorkoutSerializer(serializers.Serializer):
         sets_data = validated_data['sets']
         plan_day = validated_data.get('plan_day', None)
         plan_exercise = validated_data.get('plan_exercise', None)
+        exercise_duration_seconds = validated_data.get(
+            'exercise_duration_seconds', None)
+        session_duration_seconds = validated_data.get(
+            'session_duration_seconds', None)
 
         # 1. Get or create WorkoutSession for the user and date
         session, _ = WorkoutSession.objects.get_or_create(
@@ -126,6 +134,11 @@ class WorkoutSerializer(serializers.Serializer):
             date=date,
             defaults={'notes': notes, 'plan_day': plan_day}
         )
+
+        # Update session duration if provided (overwrite each lap so final value is accurate)
+        if session_duration_seconds is not None:
+            session.duration_seconds = session_duration_seconds
+            session.save(update_fields=['duration_seconds'])
 
         # 2. Create WorkoutExercise
         current_exercises = session.exercises.count()
@@ -135,6 +148,7 @@ class WorkoutSerializer(serializers.Serializer):
             plan_exercise=plan_exercise,
             order=current_exercises + 1,
             notes=notes,
+            duration_seconds=exercise_duration_seconds,
         )
 
         # 3. Create SetEntries

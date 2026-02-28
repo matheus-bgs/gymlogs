@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { CheckCircle2, LineChart, RotateCcw, Calendar, Pencil, Check, X } from 'lucide-react';
+import { CheckCircle2, LineChart, RotateCcw, Calendar, Pencil, Check, X, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, fetchProfile, updateSet } from '../lib/queries';
+
+const formatMmSs = (totalSecs) => {
+    const m = Math.floor(totalSecs / 60);
+    const s = totalSecs % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
 
 /**
  * Session summary screen shown when the user finishes all exercises in a plan day.
@@ -14,7 +20,7 @@ import { queryKeys, fetchProfile, updateSet } from '../lib/queries';
  *   sessionLog  — array of { exerciseName, sets: [{id?, weight, reps, reached_failure, intensity_method}] }
  *   onReset     — callback to reset the Workout page back to day selector
  */
-function WorkoutSummary({ date, dayLabel, sessionLog, onReset }) {
+function WorkoutSummary({ date, dayLabel, sessionLog, sessionDuration, onReset }) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -81,7 +87,7 @@ function WorkoutSummary({ date, dayLabel, sessionLog, onReset }) {
 
                     <h2 className="text-2xl font-bold text-white mb-1">{t('workout.sessionComplete')}</h2>
                     <p className="text-gray-400 mb-1">{t('workout.sessionSummaryTitle')}</p>
-                    <p className="text-sm text-gray-500 flex items-center justify-center gap-1.5 mb-8">
+                    <p className="text-sm text-gray-500 flex items-center justify-center gap-1.5 mb-2">
                         <Calendar className="w-4 h-4" />
                         {date}
                         {dayLabel && (
@@ -90,12 +96,27 @@ function WorkoutSummary({ date, dayLabel, sessionLog, onReset }) {
                             </span>
                         )}
                     </p>
+                    {sessionDuration != null ? (
+                        <div className="flex items-center justify-center gap-1.5 text-sm text-gray-400 mb-8 mt-1">
+                            <Timer className="w-4 h-4" />
+                            <span className="font-mono font-semibold">{formatMmSs(sessionDuration)}</span>
+                            <span className="text-xs text-gray-500">total</span>
+                        </div>
+                    ) : <div className="mb-6" />}
 
                     {/* Exercise list */}
                     <div className="space-y-3 text-left mb-8">
                         {localLog.map((entry, exIdx) => (
                             <div key={exIdx} className="bg-gray-950 rounded-2xl border border-gray-800 p-4">
-                                <p className="text-sm font-semibold text-white mb-2">{entry.exerciseName}</p>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <p className="text-sm font-semibold text-white">{entry.exerciseName}</p>
+                                    {entry.duration != null && (
+                                        <span className="flex items-center gap-1 text-xs text-gray-500">
+                                            <Timer className="w-3 h-3" />
+                                            <span className="font-mono">{formatMmSs(entry.duration)}</span>
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex flex-wrap gap-2">
                                     {entry.sets.map((s, setIdx) => (
                                         <div key={setIdx} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-900 rounded-xl border border-gray-800">

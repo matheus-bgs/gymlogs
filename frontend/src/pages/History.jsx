@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import { Clock, Pencil, Check, X } from 'lucide-react';
+import { Clock, Pencil, Check, X, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     queryKeys, fetchHistory, fetchProfile, updateSet,
 } from '../lib/queries';
 import { exName } from '../lib/i18nUtils';
+
+const formatMmSs = (totalSecs) => {
+    const m = Math.floor(totalSecs / 60);
+    const s = totalSecs % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
 
 export default function History() {
     const { t, i18n } = useTranslation();
@@ -111,6 +117,12 @@ export default function History() {
                                 {session.plan_day_label}
                             </span>
                         )}
+                        {session.duration_seconds != null && (
+                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                                <Timer className="w-3 h-3" />
+                                <span className="font-mono">{formatMmSs(session.duration_seconds)}</span>
+                            </span>
+                        )}
                         {session.notes && (
                             <span className="text-xs text-gray-500 truncate flex-1">{session.notes}</span>
                         )}
@@ -120,9 +132,17 @@ export default function History() {
                     <div className="divide-y divide-gray-800/60">
                         {session.exercises.map(we => (
                             <div key={we.id} className="px-5 py-4">
-                                <p className="text-sm font-semibold text-gray-200 mb-3">
-                                    {exName(we.exercise, i18n.language)}
-                                </p>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <p className="text-sm font-semibold text-gray-200">
+                                        {exName(we.exercise, i18n.language)}
+                                    </p>
+                                    {we.duration_seconds != null && (
+                                        <span className="flex items-center gap-1 text-xs text-gray-500">
+                                            <Timer className="w-3 h-3" />
+                                            <span className="font-mono">{formatMmSs(we.duration_seconds)}</span>
+                                        </span>
+                                    )}
+                                </div>
 
                                 <div className="space-y-2">
                                     {we.sets.map((set, idx) => {

@@ -439,6 +439,7 @@ class WorkoutHistoryView(views.APIView):
                         'name_pt': we.exercise.name_pt,
                     },
                     'notes': we.notes,
+                    'duration_seconds': we.duration_seconds,
                     'sets': sets,
                 })
             data.append({
@@ -446,6 +447,7 @@ class WorkoutHistoryView(views.APIView):
                 'date': str(s.date),
                 'notes': s.notes,
                 'plan_day_label': s.plan_day.label if s.plan_day else None,
+                'duration_seconds': s.duration_seconds,
                 'exercises': exercises,
             })
         return Response({'data': data})
