@@ -63,6 +63,7 @@
         "saving": "Salvando...",
         "saveWorkout": "Salvar Treino",
         "needOneSet": "Por favor, adicione pelo menos uma série.",
+        "missingSetFields": "A série {{set}} está incompleta — preencha o peso e as repetições.",
         "needExercise": "Por favor, selecione um exercício.",
         "createExerciseFailed": "Falha ao criar exercício. Ele pode já existir.",
         "saveWorkoutFailed": "Falha ao enviar treino",
@@ -118,6 +119,7 @@
         "title": "Histórico de Treinos",
         "subtitle": "Visualize e edite todas as suas sessões registradas.",
         "noHistory": "Nenhum treino registrado ainda.",
+        "loadError": "Não foi possível carregar o histórico. Verifique sua conexão e tente novamente.",
         "editSet": "Editar série",
         "saveSet": "Salvar",
         "cancelEdit": "Cancelar"

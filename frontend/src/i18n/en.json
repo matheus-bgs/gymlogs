@@ -63,6 +63,7 @@
         "saving": "Saving...",
         "saveWorkout": "Save Workout",
         "needOneSet": "Please add at least one set.",
+        "missingSetFields": "Set {{set}} is incomplete — fill in both weight and reps.",
         "needExercise": "Please select an exercise.",
         "createExerciseFailed": "Failed to create exercise. It might already exist.",
         "saveWorkoutFailed": "Failed to submit workout",
@@ -118,6 +119,7 @@
         "title": "Workout History",
         "subtitle": "Browse and edit all your logged sessions.",
         "noHistory": "No workouts logged yet.",
+        "loadError": "Could not load history. Please check your connection and try again.",
         "editSet": "Edit set",
         "saveSet": "Save",
         "cancelEdit": "Cancel"

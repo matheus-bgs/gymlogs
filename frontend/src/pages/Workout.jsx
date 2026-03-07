@@ -26,12 +26,19 @@ const formatMmSs = (totalSecs) => {
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 };
 
-function Toast({ message }) {
+function Toast({ message, type = 'success' }) {
     if (!message) return null;
+    const isError = type === 'error';
     return (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50">
-            <div className="flex items-center gap-2 px-5 py-3 bg-green-700 text-white rounded-2xl shadow-2xl font-medium text-sm">
-                <CheckCircle2 className="w-4 h-4" /> {message}
+            <div className={`flex items-center gap-2 px-5 py-3 rounded-2xl shadow-2xl font-medium text-sm text-white ${
+                isError ? 'bg-red-700' : 'bg-green-700'
+            }`}>
+                {isError
+                    ? <X className="w-4 h-4" />
+                    : <CheckCircle2 className="w-4 h-4" />
+                }
+                {message}
             </div>
         </div>
     );
@@ -186,6 +193,7 @@ function Workout() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const pageTopRef = useRef(null);
+    const [stopwatchVisible, setStopwatchVisible] = useState(true);
 
     // â”€â”€ Shared form state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [date, setDate] = useState(today());
@@ -321,6 +329,16 @@ function Workout() {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
+    // Track stopwatch visibility via IntersectionObserver (callback ref pattern)
+    const stopwatchCallbackRef = useCallback((el) => {
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => setStopwatchVisible(entry.isIntersecting),
+            { threshold: 0.1 }
+        );
+        observer.observe(el);
+    }, []);
+
     // Persist timer state to localStorage whenever it changes
     useEffect(() => {
         if (timerRunning && sessionStartTs && exerciseStartTs) {
@@ -336,8 +354,8 @@ function Workout() {
     }, [timerRunning]);
 
     // â”€â”€ Toast helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const showToast = useCallback((message) => {
-        setToast(message);
+    const showToast = useCallback((message, type = 'success') => {
+        setToast({ message, type });
         clearTimeout(toastTimer.current);
         toastTimer.current = setTimeout(() => setToast(null), 3500);
     }, []);
@@ -449,8 +467,18 @@ function Workout() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (sets.length === 0) { alert(t('workout.needOneSet')); return; }
-        if (hasValidationErrors) { alert(t('workout.invalidWeight')); return; }
+        if (sets.length === 0) { showToast(t('workout.needOneSet'), 'error'); return; }
+        // Check every set has both weight and reps filled in
+        const missingSets = sets.filter(s => {
+            const w = String(s.weight ?? '').trim();
+            const r = String(s.reps ?? '').trim();
+            return w === '' || r === '';
+        });
+        if (missingSets.length > 0) {
+            showToast(t('workout.missingSetFields', { set: missingSets[0].order }), 'error');
+            return;
+        }
+        if (hasValidationErrors) { showToast(t('workout.invalidWeight'), 'error'); return; }
         // Prepare sets: normalize and convert to kg for storage
         const preparedSets = sets.map(s => ({
             ...s,
@@ -475,7 +503,7 @@ function Workout() {
                 session_duration_seconds: snapSesDur,
             });
         } else {
-            if (!exercise) { alert(t('workout.needExercise')); return; }
+            if (!exercise) { showToast(t('workout.needExercise'), 'error'); return; }
             saveWorkoutMutation.mutate({ date, exercise, notes, sets: preparedSets });
         }
     };
@@ -520,7 +548,7 @@ function Workout() {
     // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     return (
         <div className="max-w-4xl mx-auto font-sans" ref={pageTopRef}>
-            <Toast message={toast} />
+            <Toast message={toast?.message} type={toast?.type} />
 
             <div className="bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl overflow-hidden">
                 <div className="px-6 py-8 sm:p-10">
@@ -588,7 +616,7 @@ function Workout() {
 
                                 {/* Stopwatch */}
                                 {planDay && (
-                                    <div className="flex items-center gap-4 px-4 py-3 bg-gray-950 rounded-2xl border border-gray-800">
+                                    <div ref={stopwatchCallbackRef} className="flex items-center gap-4 px-4 py-3 bg-gray-950 rounded-2xl border border-gray-800">
                                         {timerRunning ? (
                                             <>
                                                 <span className="flex items-center gap-1.5 text-xs text-red-400 font-semibold">
@@ -870,6 +898,34 @@ function Workout() {
                     </form>
                 </div>
             </div>
+
+            {/* Floating mini-timer — visible when the main stopwatch has scrolled out of view */}
+            {timerRunning && !stopwatchVisible && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl shadow-black/60 backdrop-blur-sm">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                    <div className="flex flex-col items-center leading-none">
+                        <span className="text-base font-mono font-bold text-white tracking-widest">
+                            {formatMmSs(exerciseSecs)}
+                        </span>
+                        <span className="text-[9px] text-gray-500 uppercase tracking-wider mt-0.5">exercise</span>
+                    </div>
+                    <span className="text-gray-700 text-xs">|</span>
+                    <div className="flex flex-col items-center leading-none">
+                        <span className="text-sm font-mono text-gray-400">
+                            {formatMmSs(sessionSecs)}
+                        </span>
+                        <span className="text-[9px] text-gray-500 uppercase tracking-wider mt-0.5">session</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleStopTimer}
+                        className="ml-1 p-1.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                        title="Stop timer"
+                    >
+                        <Square className="w-3.5 h-3.5 fill-current" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

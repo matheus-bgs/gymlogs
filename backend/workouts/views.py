@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.db.models import Max, Sum, Count, ExpressionWrapper, FloatField, F
+from django.db.models import Prefetch
 from rest_framework import generics, views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -414,8 +415,8 @@ class WorkoutHistoryView(views.APIView):
         sessions = WorkoutSession.objects.filter(
             user=request.user
         ).prefetch_related(
+            Prefetch('exercises__sets', queryset=SetEntry.objects.select_related('intensity_method').order_by('order')),
             'exercises__exercise',
-            'exercises__sets__intensity_method',
             'plan_day',
         ).order_by('-date')
 
@@ -430,7 +431,7 @@ class WorkoutHistoryView(views.APIView):
                     'reps': se.reps,
                     'reached_failure': se.reached_failure,
                     'intensity_method': se.intensity_method.name if se.intensity_method else 'none',
-                } for se in we.sets.order_by('order')]
+                } for se in we.sets.all()]
                 exercises.append({
                     'id': we.id,
                     'exercise': {

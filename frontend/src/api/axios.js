@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api/';
 
-const api = axios.create({ baseURL: BASE_URL });
+const api = axios.create({ baseURL: BASE_URL, timeout: 20000 });
 
 // ── Attach access token to every request ─────────────────────────────────────
 api.interceptors.request.use((config) => {

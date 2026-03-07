@@ -17,7 +17,7 @@ export default function History() {
     const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
 
-    const { data: historyData, isLoading } = useQuery({
+    const { data: historyData, isLoading, isError } = useQuery({
         queryKey: queryKeys.history(),
         queryFn: fetchHistory,
     });
@@ -82,6 +82,18 @@ export default function History() {
         return (
             <div className="flex items-center justify-center py-20">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500" />
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="max-w-2xl mx-auto">
+                <div className="bg-gray-900 rounded-3xl border border-red-800/40 p-10 text-center">
+                    <Clock className="h-12 w-12 text-red-600 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-white mb-2">{t('history.title')}</h2>
+                    <p className="text-gray-400">{t('history.loadError')}</p>
+                </div>
             </div>
         );
     }
