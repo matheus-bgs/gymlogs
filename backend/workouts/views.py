@@ -1,15 +1,16 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from django.db.models import Max, Sum, Count, ExpressionWrapper, FloatField, F
+from django.db.models import Max, Sum, Count, ExpressionWrapper, FloatField, F, Avg
 from django.db.models import Prefetch
 from rest_framework import generics, views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Exercise, WorkoutSession, WorkoutExercise, SetEntry, WorkoutPlan, PlanDay, PlanExercise, UserProfile
+import datetime
+from .models import Exercise, WorkoutSession, WorkoutExercise, SetEntry, WorkoutPlan, PlanDay, PlanExercise, UserProfile, BodyWeightEntry
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutPlanSerializer, PlanDaySerializer, PlanExerciseSerializer,
-    UserProfileSerializer, SetEntryUpdateSerializer,
+    UserProfileSerializer, SetEntryUpdateSerializer, BodyWeightEntrySerializer,
 )
 
 
@@ -124,6 +125,8 @@ class TopsetsView(views.APIView):
                 total_volume=Sum(ExpressionWrapper(
                     F('weight') * F('reps'), output_field=FloatField())),
                 intensity_count=Count('intensity_method'),
+                best_1rm=Max(ExpressionWrapper(
+                    F('weight') * (1.0 + F('reps') / 30.0), output_field=FloatField())),
             )
             .order_by('date')
         )
@@ -133,6 +136,7 @@ class TopsetsView(views.APIView):
             'max_weight': r['max_weight'],
             'total_volume': r['total_volume'],
             'has_intensity': r['intensity_count'] > 0,
+            'est_1rm': round(r['best_1rm'], 2) if r['best_1rm'] else None,
         } for r in rows]
         return Response({'data': result})
 
@@ -404,6 +408,50 @@ class SetEntryUpdateView(views.APIView):
 
 
 # ---------------------------------------------------------------------------
+# Body weight tracking
+# ---------------------------------------------------------------------------
+
+class BodyWeightView(views.APIView):
+    """GET today + last entry; POST upserts an entry for a given date."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        today = datetime.date.today()
+        today_entry = BodyWeightEntry.objects.filter(
+            user=request.user, date=today).first()
+        last_entry = BodyWeightEntry.objects.filter(
+            user=request.user, date__lt=today).order_by('-date').first()
+        return Response({
+            'data': {
+                'today': BodyWeightEntrySerializer(today_entry).data if today_entry else None,
+                'last': BodyWeightEntrySerializer(last_entry).data if last_entry else None,
+            }
+        })
+
+    def post(self, request):
+        weight = request.data.get('weight')
+        date_str = request.data.get('date')
+        if weight is None:
+            return Response({'error': 'weight is required.'}, status=400)
+        try:
+            weight = float(weight)
+            if weight <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response({'error': 'weight must be a positive number.'}, status=400)
+        try:
+            entry_date = datetime.date.fromisoformat(date_str) if date_str else datetime.date.today()
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+        entry, _ = BodyWeightEntry.objects.update_or_create(
+            user=request.user,
+            date=entry_date,
+            defaults={'weight': weight},
+        )
+        return Response({'data': BodyWeightEntrySerializer(entry).data}, status=200)
+
+
+# ---------------------------------------------------------------------------
 # Workout history
 # ---------------------------------------------------------------------------
 
@@ -452,3 +500,253 @@ class WorkoutHistoryView(views.APIView):
                 'exercises': exercises,
             })
         return Response({'data': data})
+
+
+# ---------------------------------------------------------------------------
+# Dashboard endpoints
+# ---------------------------------------------------------------------------
+
+class WeightHistoryView(views.APIView):
+    """GET all body weight entries for the current user, ascending by date."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        entries = BodyWeightEntry.objects.filter(
+            user=request.user
+        ).order_by('date')
+        data = [{'date': str(e.date), 'weight': e.weight} for e in entries]
+        return Response({'data': data})
+
+
+class DashboardSummaryView(views.APIView):
+    """
+    GET /api/dashboard/summary/?days=<int>
+    Returns KPI card data: weight, sessions, tonnage, avg duration, streak, PRs.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            days = int(request.query_params.get('days', 30))
+        except ValueError:
+            return Response({'error': 'days must be an integer.'}, status=400)
+
+        today = datetime.date.today()
+        current_start = today - datetime.timedelta(days=days)
+        prior_start = current_start - datetime.timedelta(days=days)
+
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        weight_unit = profile.weight_unit
+
+        def convert(val):
+            if val is None:
+                return None
+            return round(val * 2.20462, 2) if weight_unit == 'lbs' else round(val, 2)
+
+        # ── Body weight ───────────────────────────────────────────────────────
+        latest_entry = BodyWeightEntry.objects.filter(
+            user=request.user
+        ).order_by('-date').first()
+        current_weight = convert(latest_entry.weight) if latest_entry else None
+
+        prior_weight_entry = BodyWeightEntry.objects.filter(
+            user=request.user, date__lte=current_start
+        ).order_by('-date').first()
+        prior_weight = convert(prior_weight_entry.weight) if prior_weight_entry else None
+        weight_delta = None
+        if current_weight is not None and prior_weight is not None:
+            weight_delta = round(current_weight - prior_weight, 2)
+
+        # ── Sessions ─────────────────────────────────────────────────────────
+        sessions_current = WorkoutSession.objects.filter(
+            user=request.user, date__gte=current_start
+        ).count()
+        sessions_prior = WorkoutSession.objects.filter(
+            user=request.user, date__gte=prior_start, date__lt=current_start
+        ).count()
+
+        # ── Tonnage ──────────────────────────────────────────────────────────
+        def tonnage_in_range(start, end):
+            agg = SetEntry.objects.filter(
+                workout_exercise__workout_session__user=request.user,
+                workout_exercise__workout_session__date__gte=start,
+                workout_exercise__workout_session__date__lte=end,
+            ).aggregate(
+                t=Sum(ExpressionWrapper(F('weight') * F('reps'), output_field=FloatField()))
+            )
+            raw = agg['t'] or 0.0
+            return convert(raw)
+
+        tonnage_current = tonnage_in_range(current_start, today)
+        tonnage_prior = tonnage_in_range(prior_start, current_start - datetime.timedelta(days=1))
+
+        # ── Avg duration ─────────────────────────────────────────────────────
+        def avg_duration(start, end):
+            agg = WorkoutSession.objects.filter(
+                user=request.user,
+                date__gte=start, date__lte=end,
+                duration_seconds__isnull=False,
+            ).aggregate(a=Avg('duration_seconds'))
+            return round(agg['a'] / 60, 1) if agg['a'] else None
+
+        avg_dur_current = avg_duration(current_start, today)
+        avg_dur_prior = avg_duration(prior_start, current_start - datetime.timedelta(days=1))
+        avg_dur_delta = None
+        if avg_dur_current is not None and avg_dur_prior is not None:
+            avg_dur_delta = round(avg_dur_current - avg_dur_prior, 1)
+
+        # ── Active streak (trailing weeks with >= 1 session) ─────────────────
+        # Look back up to 52 weeks from today
+        streak = 0
+        check_date = today
+        for _ in range(52):
+            week_start = check_date - datetime.timedelta(days=check_date.weekday())
+            week_end = week_start + datetime.timedelta(days=6)
+            if WorkoutSession.objects.filter(
+                user=request.user, date__gte=week_start, date__lte=week_end
+            ).exists():
+                streak += 1
+                check_date = week_start - datetime.timedelta(days=1)
+            else:
+                break
+
+        # ── PRs set in last 30 days ───────────────────────────────────────────
+        thirty_days_ago = today - datetime.timedelta(days=30)
+        # For each exercise, find max weight in last 30d vs before
+        pr_count = 0
+        exercise_ids = SetEntry.objects.filter(
+            workout_exercise__workout_session__user=request.user
+        ).values_list('workout_exercise__exercise_id', flat=True).distinct()
+        for ex_id in exercise_ids:
+            recent_max = SetEntry.objects.filter(
+                workout_exercise__workout_session__user=request.user,
+                workout_exercise__exercise_id=ex_id,
+                workout_exercise__workout_session__date__gte=thirty_days_ago,
+            ).aggregate(m=Max('weight'))['m']
+            historic_max = SetEntry.objects.filter(
+                workout_exercise__workout_session__user=request.user,
+                workout_exercise__exercise_id=ex_id,
+                workout_exercise__workout_session__date__lt=thirty_days_ago,
+            ).aggregate(m=Max('weight'))['m']
+            if recent_max is not None:
+                if historic_max is None or recent_max > historic_max:
+                    pr_count += 1
+
+        return Response({'data': {
+            'current_weight': current_weight,
+            'weight_delta': weight_delta,
+            'weight_unit': weight_unit,
+            'sessions_current': sessions_current,
+            'sessions_prior': sessions_prior,
+            'tonnage_current': tonnage_current,
+            'tonnage_prior': tonnage_prior,
+            'avg_duration_minutes': avg_dur_current,
+            'avg_duration_delta': avg_dur_delta,
+            'streak_weeks': streak,
+            'pr_count_30d': pr_count,
+        }})
+
+
+class VolumeByMuscleView(views.APIView):
+    """
+    GET /api/dashboard/volume-by-muscle/?days=<int>
+    Returns per-day tonnage/sets/reps by muscle group  +  aggregated totals.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            days = int(request.query_params.get('days', 30))
+        except ValueError:
+            return Response({'error': 'days must be an integer.'}, status=400)
+
+        today = datetime.date.today()
+        start = today - datetime.timedelta(days=days)
+
+        qs = SetEntry.objects.filter(
+            workout_exercise__workout_session__user=request.user,
+            workout_exercise__workout_session__date__gte=start,
+        ).annotate(
+            session_date=F('workout_exercise__workout_session__date'),
+            muscle=F('workout_exercise__exercise__muscle_group'),
+        ).values('session_date', 'muscle')
+
+        qs = qs.annotate(
+            tonnage=Sum(ExpressionWrapper(F('weight') * F('reps'), output_field=FloatField())),
+            total_sets=Count('id'),
+            total_reps=Sum('reps'),
+        ).order_by('session_date', 'muscle')
+
+        by_day = [
+            {
+                'date': str(r['session_date']),
+                'muscle_group': r['muscle'] or 'Other',
+                'tonnage': round(r['tonnage'] or 0, 2),
+                'sets': r['total_sets'],
+                'reps': r['total_reps'] or 0,
+            }
+            for r in qs
+        ]
+
+        # Aggregate totals per muscle group
+        agg = {}
+        for row in by_day:
+            mg = row['muscle_group']
+            if mg not in agg:
+                agg[mg] = {'muscle_group': mg, 'tonnage': 0.0, 'sets': 0, 'reps': 0}
+            agg[mg]['tonnage'] += row['tonnage']
+            agg[mg]['sets'] += row['sets']
+            agg[mg]['reps'] += row['reps']
+        by_muscle = sorted(agg.values(), key=lambda x: -x['tonnage'])
+        for r in by_muscle:
+            r['tonnage'] = round(r['tonnage'], 2)
+
+        return Response({'data': {'by_muscle': by_muscle, 'by_day': by_day}})
+
+
+class TrainingCalendarView(views.APIView):
+    """
+    GET /api/dashboard/training-calendar/?year=<int>
+    Returns per-day session data for the heatmap (last 365 days by default).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        today = datetime.date.today()
+        start = today - datetime.timedelta(days=364)
+
+        sessions = WorkoutSession.objects.filter(
+            user=request.user,
+            date__gte=start,
+        ).prefetch_related('plan_day').order_by('date')
+
+        # Group by date
+        by_date = {}
+        for s in sessions:
+            d = str(s.date)
+            if d not in by_date:
+                by_date[d] = {
+                    'date': d,
+                    'session_count': 0,
+                    'tonnage': 0.0,
+                    'plan_day_labels': [],
+                }
+            by_date[d]['session_count'] += 1
+            if s.plan_day and s.plan_day.label not in by_date[d]['plan_day_labels']:
+                by_date[d]['plan_day_labels'].append(s.plan_day.label)
+
+        # Add tonnage per day
+        tonnage_qs = SetEntry.objects.filter(
+            workout_exercise__workout_session__user=request.user,
+            workout_exercise__workout_session__date__gte=start,
+        ).annotate(
+            session_date=F('workout_exercise__workout_session__date'),
+        ).values('session_date').annotate(
+            t=Sum(ExpressionWrapper(F('weight') * F('reps'), output_field=FloatField()))
+        )
+        for row in tonnage_qs:
+            d = str(row['session_date'])
+            if d in by_date:
+                by_date[d]['tonnage'] = round(row['t'] or 0, 2)
+
+        return Response({'data': sorted(by_date.values(), key=lambda x: x['date'])})

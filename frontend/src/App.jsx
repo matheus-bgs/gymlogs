@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { Dumbbell, LineChart, LogOut, ClipboardList, Menu, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import queryClient from './lib/queryClient';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Workout from './pages/Workout';
@@ -30,6 +31,7 @@ function Layout({ children }) {
     const handleLogout = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        queryClient.clear();
         navigate('/login');
     };
 

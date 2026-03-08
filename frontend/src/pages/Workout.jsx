@@ -9,10 +9,14 @@ import {
 } from '../lib/queries';
 import { exName } from '../lib/i18nUtils';
 import WorkoutSummary from './WorkoutSummary';
+import WeightCard from './WeightCard';
 
 // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const today = () => new Date().toISOString().split('T')[0];
+const localDate = (d = new Date()) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const today = () => localDate();
 
 const emptySet = (order = 1) => ({ order, weight: '', reps: '', reached_failure: false, intensity_method: 'none' });
 
@@ -549,6 +553,8 @@ function Workout() {
     return (
         <div className="max-w-4xl mx-auto font-sans" ref={pageTopRef}>
             <Toast message={toast?.message} type={toast?.type} />
+
+            <WeightCard weightUnit={weightUnit} />
 
             <div className="bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl overflow-hidden">
                 <div className="px-6 py-8 sm:p-10">

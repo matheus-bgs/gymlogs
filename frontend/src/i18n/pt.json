@@ -123,5 +123,66 @@
         "editSet": "Editar série",
         "saveSet": "Salvar",
         "cancelEdit": "Cancelar"
+    },
+    "weight": {
+        "todaysWeight": "Peso de hoje",
+        "save": "Salvar",
+        "saved": "Salvo",
+        "last": "Último",
+        "yesterday": "ontem",
+        "daysAgo": "há {{count}} dias"
+    },
+    "dashboard": {
+        "title": "Painel de Progresso",
+        "subtitle": "Sua análise de treino em um só lugar.",
+        "dateRange": {
+            "7d": "7D",
+            "30d": "30D",
+            "90d": "90D",
+            "1y": "1A",
+            "all": "Tudo"
+        },
+        "kpi": {
+            "weight": "Peso Corporal",
+            "sessions": "Sessões",
+            "tonnage": "Tonelagem",
+            "avgDuration": "Duração Média",
+            "streak": "Sequência",
+            "prs": "PRs Batidos",
+            "weeks": "sem",
+            "min": "min",
+            "last30d": "últ. 30d",
+            "streak_desc": "sequência ativa"
+        },
+        "charts": {
+            "bodyWeight": "Tendência de Peso",
+            "movingAvg": "Média 7d",
+            "muscleDistribution": "Volume por Músculo",
+            "weeklyVolume": "Volume Semanal",
+            "trainingCalendar": "Calendário de Treinos",
+            "strengthProgress": "Evolução de Força",
+            "sessionDuration": "Duração das Sessões",
+            "planDayVolume": "Volume por Dia",
+            "rollingAvg": "Média móvel"
+        },
+        "toggle": {
+            "tonnage": "Tonelagem",
+            "sets": "Séries",
+            "reps": "Reps",
+            "trendLine": "Linha de tendência",
+            "showTrend": "Mostrar tendência"
+        },
+        "metric": {
+            "topsetVolume": "Vol. Topset",
+            "maxWeight": "Peso Máx.",
+            "totalVolume": "Vol. Total",
+            "est1rm": "1RM Est."
+        },
+        "noData": "Sem dados para este período",
+        "current": "Atual",
+        "prior": "Anterior",
+        "vsLastPeriod": "vs período anterior",
+        "calendarTooltip": "{{count}} sessão(ões)",
+        "sessionDetail": "Sessão em {{date}}"
     }
 }

@@ -22,6 +22,8 @@ function Login() {
             const response = await api.post('token/', { username, password });
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
+            // Clear any cached data from a previous user session before warming the cache
+            queryClient.clear();
             // Warm the cache before navigating so the Workout page loads instantly
             await queryClient.prefetchQuery({
                 queryKey: queryKeys.exercises(),

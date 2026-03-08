@@ -123,5 +123,66 @@
         "editSet": "Edit set",
         "saveSet": "Save",
         "cancelEdit": "Cancel"
+    },
+    "weight": {
+        "todaysWeight": "Today's weight",
+        "save": "Save",
+        "saved": "Saved",
+        "last": "Last",
+        "yesterday": "yesterday",
+        "daysAgo": "{{count}} days ago"
+    },
+    "dashboard": {
+        "title": "Progress Dashboard",
+        "subtitle": "Your training analytics at a glance.",
+        "dateRange": {
+            "7d": "7D",
+            "30d": "30D",
+            "90d": "90D",
+            "1y": "1Y",
+            "all": "All"
+        },
+        "kpi": {
+            "weight": "Body Weight",
+            "sessions": "Sessions",
+            "tonnage": "Tonnage",
+            "avgDuration": "Avg Duration",
+            "streak": "Week Streak",
+            "prs": "PRs Set",
+            "weeks": "wks",
+            "min": "min",
+            "last30d": "last 30d",
+            "streak_desc": "active streak"
+        },
+        "charts": {
+            "bodyWeight": "Body Weight Trend",
+            "movingAvg": "7d avg",
+            "muscleDistribution": "Volume by Muscle",
+            "weeklyVolume": "Weekly Volume",
+            "trainingCalendar": "Training Calendar",
+            "strengthProgress": "Strength Progress",
+            "sessionDuration": "Session Duration",
+            "planDayVolume": "Volume by Day",
+            "rollingAvg": "Rolling avg"
+        },
+        "toggle": {
+            "tonnage": "Tonnage",
+            "sets": "Sets",
+            "reps": "Reps",
+            "trendLine": "Trend line",
+            "showTrend": "Show trend"
+        },
+        "metric": {
+            "topsetVolume": "Topset Vol",
+            "maxWeight": "Max Weight",
+            "totalVolume": "Total Volume",
+            "est1rm": "Est. 1RM"
+        },
+        "noData": "No data for this period",
+        "current": "Current",
+        "prior": "Prior",
+        "vsLastPeriod": "vs last period",
+        "calendarTooltip": "{{count}} session(s)",
+        "sessionDetail": "Session on {{date}}"
     }
 }

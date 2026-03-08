@@ -51,6 +51,10 @@ export default function History() {
             setLocalSets(prev => ({ ...prev, [setId]: { weight: updated.weight, reps: updated.reps } }));
             setEditStates(prev => { const n = { ...prev }; delete n[setId]; return n; });
             queryClient.invalidateQueries({ queryKey: queryKeys.history() });
+            // Editing a set can change top-set/max-weight records and last-workout data
+            // shown on the Graph and Workout pages — invalidate those families too.
+            queryClient.invalidateQueries({ queryKey: ['topsets'] });
+            queryClient.invalidateQueries({ queryKey: ['lastWorkout'] });
         },
     });
 

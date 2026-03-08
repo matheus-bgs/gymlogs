@@ -11,17 +11,44 @@
 
 import api from '../api/axios';
 
+// ─── Auth Helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Decodes the stored JWT access token and returns the current user's ID.
+ * Uses the standard `user_id` claim (Django SimpleJWT default) with a fallback
+ * to `sub`. Returns null when no token is present or decoding fails.
+ * No network request is made — this is a local base64 decode.
+ */
+export const getCurrentUserId = () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return null;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.user_id ?? payload.sub ?? null;
+    } catch {
+        return null;
+    }
+};
+
 // ─── Query Keys ──────────────────────────────────────────────────────────────
 
 export const queryKeys = {
+    // exercises is the shared global catalog — not user-scoped
     exercises: () => ['exercises'],
-    exercisesWithData: () => ['exercisesWithData'],
-    lastWorkout: (exerciseId) => ['lastWorkout', String(exerciseId)],
-    topsets: (exerciseId) => ['topsets', String(exerciseId)],
-    activePlan: () => ['plan'],
-    sessionProgress: (date, planDayId) => ['sessionProgress', date, String(planDayId)],
-    profile: () => ['profile'],
-    history: () => ['history'],
+    // everything below is user-scoped: the userId is embedded so that a second
+    // user logging in within the same tab never hits the previous user's cache
+    exercisesWithData: () => ['exercisesWithData', getCurrentUserId()],
+    lastWorkout: (exerciseId) => ['lastWorkout', String(exerciseId), getCurrentUserId()],
+    topsets: (exerciseId) => ['topsets', String(exerciseId), getCurrentUserId()],
+    activePlan: () => ['plan', getCurrentUserId()],
+    sessionProgress: (date, planDayId) => ['sessionProgress', date, String(planDayId), getCurrentUserId()],
+    profile: () => ['profile', getCurrentUserId()],
+    history: () => ['history', getCurrentUserId()],
+    weight: () => ['weight', getCurrentUserId()],
+    weightHistory: () => ['weightHistory', getCurrentUserId()],
+    dashboardSummary: (days) => ['dashboardSummary', days, getCurrentUserId()],
+    volumeByMuscle: (days) => ['volumeByMuscle', days, getCurrentUserId()],
+    trainingCalendar: () => ['trainingCalendar', getCurrentUserId()],
 };
 
 // ─── Fetcher Functions ────────────────────────────────────────────────────────
@@ -43,7 +70,7 @@ export const fetchLastWorkout = async (exerciseId) => {
 };
 
 export const fetchTopsets = async (exerciseId) => {
-    if (!exerciseId) return { x: [], topset: [], max_weight: [], has_intensity: [] };
+    if (!exerciseId) return { x: [], topset: [], max_weight: [], has_intensity: [], est_1rm: [] };
     const { data } = await api.get(`topsets/?exercise_id=${exerciseId}`);
     const rows = data.data ?? [];
     return {
@@ -52,6 +79,7 @@ export const fetchTopsets = async (exerciseId) => {
         max_weight: rows.map(d => d.max_weight),
         total_volume: rows.map(d => d.total_volume),
         has_intensity: rows.map(d => d.has_intensity),
+        est_1rm: rows.map(d => d.est_1rm),
     };
 };
 
@@ -98,6 +126,16 @@ export const updateSet = async ({ setId, weight, reps }) => {
     return data.data;
 };
 
+export const fetchWeight = async () => {
+    const { data } = await api.get('weight/');
+    return data.data ?? { today: null, last: null };
+};
+
+export const saveWeight = async ({ weight, date }) => {
+    const { data } = await api.post('weight/', { weight, date });
+    return data.data;
+};
+
 export const createPlan = async ({ name }) => {
     const { data } = await api.post('plans/', { name });
     return data.data;
@@ -140,4 +178,26 @@ export const deletePlanExercise = async ({ planId, dayId, exId }) => {
 export const reorderPlanExercises = async ({ planId, dayId, items }) => {
     const { data } = await api.post(`plans/${planId}/days/${dayId}/exercises/reorder/`, items);
     return data.data;
+};
+
+// ─── Dashboard Fetchers ───────────────────────────────────────────────────────
+
+export const fetchWeightHistory = async () => {
+    const { data } = await api.get('weight/history/');
+    return data.data ?? [];
+};
+
+export const fetchDashboardSummary = async (days = 30) => {
+    const { data } = await api.get(`dashboard/summary/?days=${days}`);
+    return data.data ?? {};
+};
+
+export const fetchVolumeByMuscle = async (days = 30) => {
+    const { data } = await api.get(`dashboard/volume-by-muscle/?days=${days}`);
+    return data.data ?? { by_muscle: [], by_day: [] };
+};
+
+export const fetchTrainingCalendar = async () => {
+    const { data } = await api.get('dashboard/training-calendar/');
+    return data.data ?? [];
 };

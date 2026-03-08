@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Exercise, WorkoutSession, WorkoutExercise, SetEntry, IntensityMethod,
-    WorkoutPlan, PlanDay, PlanExercise, UserProfile,
+    WorkoutPlan, PlanDay, PlanExercise, UserProfile, BodyWeightEntry,
 )
 
 
@@ -61,6 +61,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['weight_unit']
+
+
+class BodyWeightEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BodyWeightEntry
+        fields = ['id', 'date', 'weight']
 
 
 class SetEntryPayloadSerializer(serializers.Serializer):

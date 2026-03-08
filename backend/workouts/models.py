@@ -1,3 +1,4 @@
+import datetime
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -151,3 +152,21 @@ class UserProfile(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.get_or_create(user=instance)
+
+
+# ---------------------------------------------------------------------------
+# Body weight tracking
+# ---------------------------------------------------------------------------
+
+class BodyWeightEntry(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='weight_entries', db_index=True)
+    date = models.DateField(default=datetime.date.today, db_index=True)
+    weight = models.FloatField()  # always stored in kg
+
+    class Meta:
+        unique_together = ('user', 'date')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date}: {self.weight} kg"
