@@ -76,7 +76,16 @@
         "sessionComplete": "Session Complete!",
         "sessionSummaryTitle": "Workout Summary",
         "viewProgress": "View Progress",
-        "logAnotherDay": "Log Another Day"
+        "logAnotherDay": "Log Another Day",
+        "logExercise": "Log Exercise",
+        "relogExercise": "Re-log Exercise",
+        "finishWorkout": "Finish Workout",
+        "startWorkout": "Start Workout",
+        "addExercise": "Add Exercise",
+        "removeCard": "Remove",
+        "confirmRemoveLogged": "This exercise is already logged. Remove it and delete the data?",
+        "exerciseAlreadyAdded": "Exercise already in the list",
+        "sessionNotes": "Session Notes"
     },
     "plan": {
         "title": "My Workout Plan",

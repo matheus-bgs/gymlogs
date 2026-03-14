@@ -91,7 +91,12 @@ export const fetchActivePlan = async () => {
 export const fetchSessionProgress = async (date, planDayId) => {
     if (!date || !planDayId) return [];
     const { data } = await api.get(`workouts/session-progress/?date=${date}&plan_day_id=${planDayId}`);
+    // data.data is now an array of { exercise_id, workout_exercise_id, sets[] }
     return data.data ?? [];
+};
+
+export const deleteWorkoutExercise = async (weId) => {
+    await api.delete(`workout-exercises/${weId}/`);
 };
 
 export const fetchProfile = async () => {
@@ -107,7 +112,8 @@ export const fetchHistory = async () => {
 // ─── Mutator Functions ────────────────────────────────────────────────────────
 
 export const saveWorkout = async (payload) => {
-    const { data } = await api.post('workouts/', payload);
+    const { _meta, ...body } = payload;  // strip frontend-only metadata
+    const { data } = await api.post('workouts/', body);
     return data;
 };
 

@@ -76,7 +76,16 @@
         "sessionComplete": "Sessão Concluída!",
         "sessionSummaryTitle": "Resumo do Treino",
         "viewProgress": "Ver Progresso",
-        "logAnotherDay": "Registrar Outro Dia"
+        "logAnotherDay": "Registrar Outro Dia",
+        "logExercise": "Registrar Exercício",
+        "relogExercise": "Reatualizar Exercício",
+        "finishWorkout": "Finalizar Treino",
+        "startWorkout": "Iniciar Treino",
+        "addExercise": "Adicionar Exercício",
+        "removeCard": "Remover",
+        "confirmRemoveLogged": "Este exercício já foi registrado. Remover e apagar os dados?",
+        "exerciseAlreadyAdded": "Exercício já está na lista",
+        "sessionNotes": "Notas da Sessão"
     },
     "plan": {
         "title": "Meu Plano de Treino",

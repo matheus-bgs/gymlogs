@@ -336,8 +336,9 @@ class PlanExerciseReorderView(views.APIView):
 class SessionProgressView(views.APIView):
     """
     GET /api/workouts/session-progress/?date=YYYY-MM-DD&plan_day_id=X
-    Returns the list of exercise IDs already logged for that user+date session.
-    Used by the frontend to resume a partially-completed plan day after a page refresh.
+    Returns full data for exercises already logged for that user+date+plan_day session.
+    Used by the frontend to resume a partially-completed plan day after a page refresh,
+    pre-populating green cards with previously logged sets.
     """
     permission_classes = [IsAuthenticated]
 
@@ -347,15 +348,56 @@ class SessionProgressView(views.APIView):
         if not date or not plan_day_id:
             return Response({'error': 'date and plan_day_id are required.'}, status=400)
         session = WorkoutSession.objects.filter(
-            user=request.user, date=date
+            user=request.user, date=date, plan_day_id=plan_day_id
         ).first()
         if not session:
             return Response({'data': []})
-        logged_ids = list(
-            WorkoutExercise.objects.filter(workout_session=session)
-            .values_list('exercise_id', flat=True)
+        workout_exercises = (
+            WorkoutExercise.objects
+            .filter(workout_session=session)
+            .prefetch_related('sets__intensity_method')
+            .order_by('order')
         )
-        return Response({'data': logged_ids})
+        result = []
+        for we in workout_exercises:
+            sets_data = [
+                {
+                    'id': s.id,
+                    'order': s.order,
+                    'weight': s.weight,
+                    'reps': s.reps,
+                    'reached_failure': s.reached_failure,
+                    'intensity_method': s.intensity_method.name if s.intensity_method else 'none',
+                }
+                for s in we.sets.order_by('order')
+            ]
+            result.append({
+                'exercise_id': we.exercise_id,
+                'workout_exercise_id': we.id,
+                'notes': we.notes or '',
+                'sets': sets_data,
+            })
+        return Response({'data': result})
+
+
+class WorkoutExerciseDeleteView(views.APIView):
+    """
+    DELETE /api/workout-exercises/<we_id>/
+    Deletes a WorkoutExercise (and its SetEntry records via CASCADE) owned by the
+    requesting user.  Used when the user removes a logged exercise card or re-logs
+    an exercise (delete old record, then POST a new one).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, we_id):
+        try:
+            we = WorkoutExercise.objects.select_related('workout_session').get(
+                id=we_id, workout_session__user=request.user
+            )
+        except WorkoutExercise.DoesNotExist:
+            return Response({'error': 'Not found.'}, status=404)
+        we.delete()
+        return Response(status=204)
 
 
 # ---------------------------------------------------------------------------

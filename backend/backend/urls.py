@@ -26,6 +26,7 @@ from workouts.views import (
     PlanExerciseView, PlanExerciseDetailView, PlanExerciseReorderView,
     UserProfileView, SetEntryUpdateView, WorkoutHistoryView, BodyWeightView,
     WeightHistoryView, DashboardSummaryView, VolumeByMuscleView, TrainingCalendarView,
+    WorkoutExerciseDeleteView,
 )
 
 urlpatterns = [
@@ -51,6 +52,8 @@ urlpatterns = [
     path("api/dashboard/training-calendar/", TrainingCalendarView.as_view()),
     # Set editing
     path("api/sets/<int:set_id>/", SetEntryUpdateView.as_view()),
+    # Workout exercise deletion (remove card or re-log)
+    path("api/workout-exercises/<int:we_id>/", WorkoutExerciseDeleteView.as_view()),
     # Plan endpoints
     path("api/plans/", WorkoutPlanView.as_view()),
     path("api/plans/<int:plan_id>/", PlanDetailView.as_view()),

@@ -108,19 +108,19 @@ function WorkoutSummary({ date, dayLabel, sessionLog, sessionDuration, onReset }
                     <div className="space-y-3 text-left mb-8">
                         {localLog.map((entry, exIdx) => (
                             <div key={exIdx} className="bg-gray-950 rounded-2xl border border-gray-800 p-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <p className="text-sm font-semibold text-white">{entry.exerciseName}</p>
+                                <p className="text-sm font-semibold text-white mb-2">{entry.exerciseName}</p>
+
+                                {/* Inline summary: {time} – w×r[F][method] | w×r | … */}
+                                <div className="flex flex-wrap items-center gap-y-1.5 text-xs">
                                     {entry.duration != null && (
-                                        <span className="flex items-center gap-1 text-xs text-gray-500">
-                                            <Timer className="w-3 h-3" />
-                                            <span className="font-mono">{formatMmSs(entry.duration)}</span>
-                                        </span>
+                                        <>
+                                            <span className="font-mono font-semibold text-green-400 mr-1.5">{formatMmSs(entry.duration)}</span>
+                                            <span className="text-gray-600 mr-1.5">–</span>
+                                        </>
                                     )}
-                                </div>
-                                <div className="flex flex-wrap gap-2">
                                     {entry.sets.map((s, setIdx) => (
-                                        <div key={setIdx} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-900 rounded-xl border border-gray-800">
-                                            <span className="text-xs font-bold text-gray-500">{setIdx + 1}</span>
+                                        <React.Fragment key={setIdx}>
+                                            {setIdx > 0 && <span className="text-gray-600 mx-1.5">|</span>}
                                             {editingId === s.id && s.id ? (
                                                 <div className="flex items-center gap-1">
                                                     <input
@@ -130,7 +130,7 @@ function WorkoutSummary({ date, dayLabel, sessionLog, sessionDuration, onReset }
                                                         onChange={e => setEditWeight(e.target.value)}
                                                         autoFocus
                                                     />
-                                                    <span className="text-gray-500 text-xs">×</span>
+                                                    <span className="text-gray-500">×</span>
                                                     <input
                                                         type="text" inputMode="numeric"
                                                         className="w-10 px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
@@ -149,27 +149,25 @@ function WorkoutSummary({ date, dayLabel, sessionLog, sessionDuration, onReset }
                                             ) : (
                                                 <button
                                                     type="button"
-                                                    className="flex items-center gap-1 group/setbtn"
+                                                    className="flex items-center gap-0.5 group/setbtn"
                                                     onClick={() => s.id && startEdit(s)}
                                                     title={s.id ? t('history.editSet') : undefined}
                                                 >
-                                                    <span className="text-xs text-white font-medium group-hover/setbtn:text-green-400 transition-colors">
-                                                        {displayW(s.weight)} <span className="text-gray-500">{weightUnit}</span>
-                                                        <span className="text-gray-500 mx-0.5">×</span>
-                                                        {s.reps}
+                                                    <span className="text-white font-medium group-hover/setbtn:text-green-400 transition-colors">
+                                                        {displayW(s.weight)}<span className="text-gray-500">{weightUnit}</span>
                                                     </span>
-                                                    {s.id && <Pencil className="w-2.5 h-2.5 text-gray-600 opacity-0 group-hover/setbtn:opacity-100 transition-opacity" />}
+                                                    <span className="text-gray-500 mx-0.5">×</span>
+                                                    <span className="text-white font-medium group-hover/setbtn:text-green-400 transition-colors">{s.reps}</span>
+                                                    {s.reached_failure && (
+                                                        <span className="ml-0.5 text-[10px] px-0.5 rounded bg-red-500/20 text-red-400 font-bold leading-none">F</span>
+                                                    )}
+                                                    {s.intensity_method && s.intensity_method !== 'none' && (
+                                                        <span className="ml-0.5 text-[10px] px-0.5 rounded bg-green-500/20 text-green-400 font-medium leading-none">{s.intensity_method}</span>
+                                                    )}
+                                                    {s.id && <Pencil className="ml-0.5 w-2.5 h-2.5 text-gray-600 opacity-0 group-hover/setbtn:opacity-100 transition-opacity" />}
                                                 </button>
                                             )}
-                                            {s.reached_failure && (
-                                                <span className="text-[10px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">F</span>
-                                            )}
-                                            {s.intensity_method && s.intensity_method !== 'none' && (
-                                                <span className="text-[10px] px-1 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">
-                                                    {s.intensity_method}
-                                                </span>
-                                            )}
-                                        </div>
+                                        </React.Fragment>
                                     ))}
                                 </div>
                             </div>
